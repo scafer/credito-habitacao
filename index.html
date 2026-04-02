@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crédito Habitação</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="app-header">
+  <div class="header-inner">
+    <div class="brand">
+      <div style="font-size:1.5rem">🏠</div>
+      <div><h1>Crédito Habitação</h1><p>Simulador · Histórico · Cenários</p></div>
+    </div>
+  </div>
+</header>
+<div class="tabs-bar"><div class="tabs-inner">
+  <div class="tab active" onclick="showTab('resumo',this)">Resumo</div>
+  <div class="tab" onclick="showTab('euribor',this)">Euribor &amp; Cenários</div>
+  <div class="tab" onclick="showTab('tabela',this)">Plano</div>
+  <div class="tab" onclick="showTab('abates',this)">Abates</div>
+  <div class="tab" onclick="showTab('config',this)">Configuração</div>
+</div></div>
+<div class="main">
+
+<!-- RESUMO -->
+<div class="panel active" id="panel-resumo">
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title"><span class="dot"></span>Situação actual</div>
+      <span style="font-size:.72rem;color:var(--steel)" id="r-data"></span>
+    </div>
+    <div class="stat-grid" style="margin-bottom:14px">
+      <div class="stat accent"><div class="stat-label">Capital em dívida</div><div class="stat-val" id="r-capital">—</div></div>
+      <div class="stat"><div class="stat-label">Prestação actual</div><div class="stat-val" id="r-pmt">—</div><div class="stat-sub" id="r-taxa">—</div></div>
+      <div class="stat"><div class="stat-label">Juros pagos até hoje</div><div class="stat-val" id="r-jpagos">—</div></div>
+      <div class="stat"><div class="stat-label">Meses restantes</div><div class="stat-val" id="r-mrest">—</div></div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-meta"><span>Capital amortizado</span><span id="r-pct">—</span></div>
+      <div class="progress-track"><div class="progress-fill" id="r-bar" style="width:0%"></div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head"><div class="card-title"><span class="dot"></span>Custo total estimado — por cenário</div></div>
+    <div class="sc-compare">
+      <div class="sc-box opt"><div class="sc-box-label">🟢 Optimista</div><div class="sc-box-val" id="r-tot-opt">—</div><div class="sc-box-sub" id="r-j-opt">—</div></div>
+      <div class="sc-box base"><div class="sc-box-label">🟡 Base</div><div class="sc-box-val" id="r-tot-base">—</div><div class="sc-box-sub" id="r-j-base">—</div></div>
+      <div class="sc-box pess"><div class="sc-box-label">🔴 Pessimista</div><div class="sc-box-val" id="r-tot-pess">—</div><div class="sc-box-sub" id="r-j-pess">—</div></div>
+    </div>
+    <div class="info" id="r-info"></div>
+  </div>
+</div>
+
+<!-- EURIBOR -->
+<div class="panel" id="panel-euribor">
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title"><span class="dot"></span>Histórico de revisões (real)</div>
+      <button class="btn btn-primary btn-sm" onclick="toggleForm()">+ Adicionar</button>
+    </div>
+    <div style="margin:10px 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <span style="font-size:.75rem;color:var(--steel)">Euribor tenor:</span>
+      <button class="btn btn-sm euribor-tenor-btn active" data-tenor="3" onclick="setEuriborTenor(3,this)">3M</button>
+      <button class="btn btn-sm euribor-tenor-btn" data-tenor="6" onclick="setEuriborTenor(6,this)">6M</button>
+      <button class="btn btn-sm euribor-tenor-btn" data-tenor="12" onclick="setEuriborTenor(12,this)">12M</button>
+    </div>
+    <div class="add-form" id="add-form" style="display:none">
+      <div class="add-form-grid">
+        <div class="form-field"><label>Mês de início (nº do mês do crédito)</label><input type="number" id="ah-mes" placeholder="ex: 28"></div>
+        <div class="form-field"><label>Euribor 3M (%)</label><input type="number" id="ah-eu-3" placeholder="ex: 2.109" step="0.001"></div>
+        <div class="form-field"><label>Euribor 6M (%)</label><input type="number" id="ah-eu-6" placeholder="ex: 2.109" step="0.001"></div>
+        <div class="form-field"><label>Euribor 12M (%)</label><input type="number" id="ah-eu-12" placeholder="ex: 2.109" step="0.001"></div>
+        <div class="form-field" style="grid-column:1/-1"><label>Descrição (opcional)</label><input type="text" id="ah-desc" placeholder="ex: Revisão Q3 2026"></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary btn-sm" onclick="addHist()">Guardar</button>
+        <button class="btn btn-ghost btn-sm" onclick="toggleForm()">Cancelar</button>
+      </div>
+    </div>
+    <div id="hist-list"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><div class="card-title"><span class="dot"></span>Cenários futuros (previsão)</div></div>
+    <p style="font-size:.78rem;color:var(--steel);margin-bottom:16px">Define os três cenários para os períodos futuros ainda sem revisão confirmada.</p>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:14px">
+        <div style="font-size:.72rem;font-weight:700;color:#15803d;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">🟢 Cenário Optimista</div>
+        <div class="field-row" style="padding:0;border:none">
+          <div class="field-label">Euribor futura (%)</div>
+          <input type="number" id="sc-opt" value="1.50" step="0.01" oninput="setScenarioRate('opt', this.value)" style="width:120px;border:1.5px solid #86efac;border-radius:8px;padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:600;color:#15803d;background:#f0fdf4;text-align:right">
+        </div>
+      </div>
+      <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:14px">
+        <div style="font-size:.72rem;font-weight:700;color:#b45309;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">🟡 Cenário Base</div>
+        <div class="field-row" style="padding:0;border:none">
+          <div class="field-label">Euribor futura (%)</div>
+          <input type="number" id="sc-base" value="2.50" step="0.01" oninput="setScenarioRate('base', this.value)" style="width:120px;border:1.5px solid #fcd34d;border-radius:8px;padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:600;color:#b45309;background:#fffbeb;text-align:right">
+        </div>
+      </div>
+      <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:14px">
+        <div style="font-size:.72rem;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">🔴 Cenário Pessimista</div>
+        <div class="field-row" style="padding:0;border:none">
+          <div class="field-label">Euribor futura (%)</div>
+          <input type="number" id="sc-pess" value="4.00" step="0.01" oninput="setScenarioRate('pess', this.value)" style="width:120px;border:1.5px solid #fca5a5;border-radius:8px;padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:600;color:#dc2626;background:#fef2f2;text-align:right">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title"><span class="dot"></span>Linha do tempo — Euribor aplicada</div>
+      <div style="display:flex;gap:4px">
+        <div class="scenario-tab sc-opt active" onclick="setTlSc('opt',this)">Opt.</div>
+        <div class="scenario-tab sc-base" onclick="setTlSc('base',this)">Base</div>
+        <div class="scenario-tab sc-pess" onclick="setTlSc('pess',this)">Pess.</div>
+      </div>
+    </div>
+    <div id="tl-list"></div>
+  </div>
+</div>
+
+<!-- TABELA -->
+<div class="panel" id="panel-tabela">
+  <div class="card" style="padding:12px 16px;margin-bottom:12px">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:space-between">
+      <div style="font-size:.7rem;display:flex;gap:10px;flex-wrap:wrap">
+        <span style="color:#92400e">■ Fixa</span>
+        <span style="color:#065f46">■ Histórico</span>
+        <span style="color:#92400e">■ Hoje</span>
+        <span id="tbl-sc-legend" style="color:#15803d">■ Cenário</span>
+      </div>
+      <div style="display:flex;gap:4px">
+        <div class="scenario-tab sc-opt active" style="flex:none;padding:5px 12px;font-size:.72rem" onclick="setTblSc('opt',this)">Optimista</div>
+        <div class="scenario-tab sc-base" style="flex:none;padding:5px 12px;font-size:.72rem" onclick="setTblSc('base',this)">Base</div>
+        <div class="scenario-tab sc-pess" style="flex:none;padding:5px 12px;font-size:.72rem" onclick="setTblSc('pess',this)">Pessimista</div>
+      </div>
+    </div>
+  </div>
+  <div class="tbl-wrap">
+    <table><thead><tr>
+      <th style="text-align:center">Mês</th><th>Data</th><th>Prestação</th><th>Juros</th><th>Amortiz.</th><th>Capital</th><th>Euribor</th><th></th>
+    </tr></thead><tbody id="tbl-body"></tbody></table>
+  </div>
+  <div style="text-align:center;margin-top:14px"><button class="btn btn-ghost" id="tbl-more" onclick="loadMore()">Mostrar mais</button></div>
+</div>
+
+<!-- ABATES -->
+<div class="panel" id="panel-abates">
+
+  <!-- Histórico de abates -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title"><span class="dot"></span>Abates realizados</div>
+      <button class="btn btn-primary btn-sm" onclick="toggleAbateForm()">+ Registar abate</button>
+    </div>
+    <div class="add-form" id="abate-form" style="display:none">
+      <div class="add-form-grid">
+        <div class="form-field"><label>Mês do crédito em que foi feito</label><input type="number" id="ab-hist-mes" placeholder="ex: 26" min="1"></div>
+        <div class="form-field"><label>Valor amortizado (€)</label><input type="number" id="ab-hist-val" placeholder="ex: 5000" step="100"></div>
+        <div class="form-field"><label>Opção escolhida</label><select id="ab-hist-op"><option value="term">Reduziu prazo</option><option value="payment">Reduziu prestação</option></select></div>
+        <div class="form-field"><label>Descrição (opcional)</label><input type="text" id="ab-hist-desc" placeholder="ex: Bónus anual"></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary btn-sm" onclick="addAbateHist()">Guardar</button>
+        <button class="btn btn-ghost btn-sm" onclick="toggleAbateForm()">Cancelar</button>
+      </div>
+    </div>
+    <div id="abates-hist-list"></div>
+  </div>
+
+  <!-- Simulador -->
+  <div class="card">
+    <div class="card-title" style="margin-bottom:16px"><span class="dot"></span>Simular abate antecipado</div>
+    <div class="field-row">
+      <div class="field-label">Mês em que faria o abate<div class="field-hint">Nº do mês do crédito</div></div>
+      <input type="number" id="ab-mes" value="" oninput="calcAbate()" style="width:148px">
+    </div>
+    <div class="field-row">
+      <div class="field-label">Valor do abate (€)<div class="field-hint">Montante a amortizar</div></div>
+      <input type="number" id="ab-val" value="10000" step="500" oninput="calcAbate()">
+    </div>
+    <div class="field-row">
+      <div class="field-label">Opção após abate</div>
+      <select id="ab-op" onchange="calcAbate()"><option value="term">Reduzir prazo</option><option value="payment" selected>Reduzir prestação</option></select>
+    </div>
+    <div class="field-row">
+      <div class="field-label">Cenário Euribor futura</div>
+      <select id="ab-sc" onchange="calcAbate()"><option value="opt">Optimista</option><option value="base" selected>Base</option><option value="pess">Pessimista</option></select>
+    </div>
+  </div>
+
+  <div id="ab-result" style="display:none">
+    <div class="result-banner"><div class="big" id="ab-poupar">—</div><div class="sub">💰 Poupança total em juros</div></div>
+    <div class="stat-grid" style="margin-bottom:10px">
+      <div class="stat accent"><div class="stat-label">Capital no mês do abate</div><div class="stat-val" id="ab-cap-antes">—</div></div>
+      <div class="stat green"><div class="stat-label">Capital após abate</div><div class="stat-val" id="ab-cap">—</div></div>
+      <div class="stat"><div class="stat-label">Juros restantes SEM abate</div><div class="stat-val" id="ab-sem">—</div></div>
+      <div class="stat red"><div class="stat-label">Juros restantes COM abate</div><div class="stat-val" id="ab-com">—</div></div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat green"><div class="stat-label" id="ab-op-lbl">—</div><div class="stat-val" id="ab-op-val">—</div></div>
+      <div class="stat gold"><div class="stat-label">Penalização estimada (0,5%)</div><div class="stat-val" id="ab-penal">—</div></div>
+    </div>
+    <div class="warn" style="margin-top:10px">⚠️ Verifique a penalização contratual por abate antecipado — habitualmente <strong>0,5%</strong> do capital amortizado em taxa variável. A poupança líquida é a poupança em juros menos a penalização.</div>
+  </div>
+</div>
+
+<!-- CONFIG -->
+<div class="panel" id="panel-config">
+  <div class="card">
+    <div class="card-title" style="margin-bottom:16px"><span class="dot"></span>Dados do contrato</div>
+    <div class="field-row"><div class="field-label">Capital inicial (€)</div><input type="number" id="cfg-capital" value="150000" oninput="recalc()"></div>
+    <div class="field-row"><div class="field-label">Prazo total (anos)</div><input type="number" id="cfg-prazo" value="30" oninput="recalc()"></div>
+    <div class="field-row"><div class="field-label">Meses taxa fixa</div><input type="number" id="cfg-fixos" value="24" oninput="recalc()"></div>
+    <div class="field-row"><div class="field-label">Taxa fixa anual (%)</div><input type="number" id="cfg-fixa" value="3.00" step="0.01" oninput="recalc()"></div>
+    <div class="field-row"><div class="field-label">Spread (%)</div><input type="number" id="cfg-spread" value="0.90" step="0.001" oninput="recalc()"></div>
+    <div class="field-row"><div class="field-label">Meses decorridos hoje</div><input type="number" id="cfg-hoje" value="12" oninput="recalc()"></div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:4px"><span class="dot"></span>Exportar / Importar dados</div>
+    <p style="font-size:.78rem;color:var(--steel);margin-bottom:16px">Guarda todos os dados (contrato, histórico Euribor e cenários) num ficheiro <code style="background:var(--fog);padding:1px 5px;border-radius:4px;font-size:.75rem">.json</code>. Importa quando quiseres recuperar tudo.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="exportarDados()">⬇ Exportar dados</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('import-input').click()">⬆ Importar dados</button>
+      <input type="file" id="import-input" accept=".json" style="display:none" onchange="importarDados(event)">
+    </div>
+    <div id="import-msg" style="display:none;margin-top:12px"></div>
+    <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div style="font-size:.75rem;color:var(--steel)">💾 Gravação automática no browser activa</div>
+      <button class="btn btn-danger btn-sm" onclick="clearStorage()">🗑 Limpar dados locais</button>
+    </div>
+    <div id="storage-status" style="display:none;margin-top:10px"></div>
+  </div>
+</div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
