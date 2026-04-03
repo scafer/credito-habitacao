@@ -118,3 +118,22 @@ tbody tr:hover td{background:var(--fog)}
 .empty{text-align:center;padding:32px;color:var(--steel);font-size:.82rem}
 .sc-input{width:120px;border:1.5px solid;border-radius:8px;padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:600;text-align:right;background:inherit}
 .sc-input:focus{outline:none}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .main { padding: 20px 10px 60px; }
+  .sc-compare { grid-template-columns: 1fr; gap: 8px; }
+  .sc-box { padding: 12px; }
+  .sc-box-val { font-size: 1.1rem; }
+  .euribor-entry { grid-template-columns: 1fr; gap: 6px; padding: 8px 10px; }
+  .euribor-entry > div:first-child { order: 1; }
+  .euribor-entry > .entry-bar-wrap { order: 2; height: 8px; }
+  .euribor-entry > .entry-rate { order: 3; text-align: left; }
+  .euribor-entry > div:last-child { order: 4; justify-content: flex-end; }
+  .entry-period { font-size: 0.75rem; }
+  .stat-grid { grid-template-columns: 1fr; }
+  .card-head { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .tabs-bar { overflow-x: auto; }
+  .tabs-inner { flex-wrap: nowrap; }
+  .tab { padding: 10px 12px; font-size: 0.7rem; }
+}
