@@ -253,18 +253,16 @@ function toggleAbateForm(){const el=document.getElementById('abate-form');el.sty
 
 function addHist(){
   const mes=parseInt(document.getElementById('ah-mes').value);
-  const eu3=parseFloat(document.getElementById('ah-eu-3').value);
-  const eu6=parseFloat(document.getElementById('ah-eu-6').value);
-  const eu12=parseFloat(document.getElementById('ah-eu-12').value);
+  const eu=parseFloat(document.getElementById('ah-eu').value);
   const desc=document.getElementById('ah-desc').value.trim();
-  if(!mes||isNaN(eu3) || isNaN(eu6) || isNaN(eu12)){alert('Preenche o mês e as Euribors para 3M, 6M e 12M.');return;}
+  if(!mes || isNaN(eu)){alert('Preenche o mês e a taxa Euribor.');return;}
   euriborHistory=euriborHistory.filter(h=>h.startMonth!==mes);
-  euriborHistory.push({startMonth:mes,rates:{3:eu3,6:eu6,12:eu12},desc:desc||`Revisão mês ${mes}`});
+  const rates = {};
+  rates[euriborTenor] = eu;
+  euriborHistory.push({startMonth:mes,rates,desc:desc||`Revisão mês ${mes}`});
   euriborHistory.sort((a,b)=>a.startMonth-b.startMonth);
   document.getElementById('ah-mes').value='';
-  document.getElementById('ah-eu-3').value='';
-  document.getElementById('ah-eu-6').value='';
-  document.getElementById('ah-eu-12').value='';
+  document.getElementById('ah-eu').value='';
   document.getElementById('ah-desc').value='';
   toggleForm();recalc();
 }
@@ -275,6 +273,7 @@ function setEuriborTenor(tenor,el){
   euriborTenor = tenor;
   document.querySelectorAll('.euribor-tenor-btn').forEach(b=>b.classList.remove('active'));
   if(el) el.classList.add('active');
+  document.getElementById('ah-eu-label').textContent = `Euribor ${tenor}M (%)`;
   updateScenarioInputs();
   recalc();
 }
@@ -427,6 +426,7 @@ function recalc(){
 // ── INIT ────────────────────────────────────────────────
 const restoredFromStorage = loadFromStorage();
 updateScenarioInputs();
+document.getElementById('ah-eu-label').textContent = `Euribor ${euriborTenor}M (%)`;
 recalc();
 document.getElementById('ab-mes').value = document.getElementById('cfg-hoje').value;
 
