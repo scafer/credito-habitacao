@@ -199,9 +199,9 @@
           <div class="card-title"><span class="dot"></span><span data-i18n="euribor.timeline">Linha do tempo — Euribor
               aplicada</span></div>
           <div style="display:flex;gap:4px">
-            <div class="scenario-tab sc-opt active" onclick="setTlSc('opt',this)" aria-label="Cenário Optimista"
+            <div class="scenario-tab sc-opt" onclick="setTlSc('opt',this)" aria-label="Cenário Optimista"
               data-i18n="euribor.scenarioChartOpt">Opt.</div>
-            <div class="scenario-tab sc-base" onclick="setTlSc('base',this)" aria-label="Cenário Base"
+            <div class="scenario-tab sc-base active" onclick="setTlSc('base',this)" aria-label="Cenário Base"
               data-i18n="euribor.scenarioChartBase">Base</div>
             <div class="scenario-tab sc-pess" onclick="setTlSc('pess',this)" aria-label="Cenário Pessimista"
               data-i18n="euribor.scenarioChartPess">Pess.</div>
@@ -222,10 +222,10 @@
             <span id="tbl-sc-legend" style="color:#15803d" data-i18n="table.legendSc">■ Cenário</span>
           </div>
           <div style="display:flex;gap:4px">
-            <div class="scenario-tab sc-opt active" style="flex:none;padding:5px 12px;font-size:.72rem"
+            <div class="scenario-tab sc-opt" style="flex:none;padding:5px 12px;font-size:.72rem"
               onclick="setTblSc('opt',this)" aria-label="Cenário Optimista" data-i18n="euribor.scenarioOpt">Optimista
             </div>
-            <div class="scenario-tab sc-base" style="flex:none;padding:5px 12px;font-size:.72rem"
+            <div class="scenario-tab sc-base active" style="flex:none;padding:5px 12px;font-size:.72rem"
               onclick="setTblSc('base',this)" aria-label="Cenário Base" data-i18n="euribor.scenarioBase">Base</div>
             <div class="scenario-tab sc-pess" style="flex:none;padding:5px 12px;font-size:.72rem"
               onclick="setTblSc('pess',this)" aria-label="Cenário Pessimista" data-i18n="euribor.scenarioPess">
@@ -264,8 +264,15 @@
         <div class="card-head">
           <div class="card-title"><span class="dot"></span><span data-i18n="prepayment.title">Abates realizados</span>
           </div>
-          <button class="btn btn-primary btn-sm" onclick="toggleAbateForm()" aria-label="Registar abate"
-            data-i18n="prepayment.register">+ Registar abate</button>
+          <div style="display:flex;gap:6px;align-items:center">
+            <div id="abates-impact-sc" style="display:flex;gap:3px">
+              <div class="scenario-tab sc-opt" onclick="setAbatesImpactSc('opt',this)" style="padding:4px 9px;font-size:.68rem" data-i18n="euribor.scenarioChartOpt">Opt.</div>
+              <div class="scenario-tab sc-base active" onclick="setAbatesImpactSc('base',this)" style="padding:4px 9px;font-size:.68rem" data-i18n="euribor.scenarioChartBase">Base</div>
+              <div class="scenario-tab sc-pess" onclick="setAbatesImpactSc('pess',this)" style="padding:4px 9px;font-size:.68rem" data-i18n="euribor.scenarioChartPess">Pess.</div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="toggleAbateForm()" aria-label="Registar abate"
+              data-i18n="prepayment.register">+ Registar abate</button>
+          </div>
         </div>
         <div class="add-form" id="abate-form" style="display:none">
           <div class="add-form-grid">
@@ -388,13 +395,14 @@
             <div class="form-field"><label data-i18n="costs.frequency">Frequência</label><select id="c-freq">
                 <option value="monthly" data-i18n="costs.monthly">Mensal</option>
                 <option value="annual" data-i18n="costs.annual">Anual</option>
+                <option value="oneTime" data-i18n="costs.oneTime">Pontual</option>
               </select></div>
             <div class="form-field"><label data-i18n="costs.startMonth">Mês início (crédito)</label><input type="number"
                 id="c-inicio" placeholder="ex: 1" min="1" value="1"></div>
             <div class="form-field"><label data-i18n="costs.endMonth">Mês fim (opcional)</label><input type="number"
                 id="c-fim" placeholder="ex: 360" min="1"></div>
             <div class="form-field" style="grid-column:1/-1"><label data-i18n="costs.desc">Descrição
-                (opcional)</label><input type="text" id="c-desc" placeholder="ex: AXA renovação anual"></div>
+                (opcional)</label><input type="text" id="c-desc" placeholder="ex: renovação anual"></div>
           </div>
           <div style="display:flex;gap:8px">
             <button class="btn btn-primary btn-sm" onclick="addCusto()" data-i18n="form.save">Guardar</button>
