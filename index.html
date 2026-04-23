@@ -151,6 +151,7 @@
             <button class="btn btn-primary btn-sm" onclick="addHist()" data-i18n="form.save">Guardar</button>
             <button class="btn btn-ghost btn-sm" onclick="toggleForm()" data-i18n="form.cancel">Cancelar</button>
           </div>
+          <div id="ah-error" style="display:none;margin-top:8px;padding:6px 10px;border-radius:6px;background:#fef2f2;color:#dc2626;font-size:.78rem"></div>
         </div>
         <div id="hist-list"></div>
       </div>
@@ -286,6 +287,7 @@
             <button class="btn btn-primary btn-sm" onclick="addAbateHist()" data-i18n="form.save">Guardar</button>
             <button class="btn btn-ghost btn-sm" onclick="toggleAbateForm()" data-i18n="form.cancel">Cancelar</button>
           </div>
+          <div id="ab-hist-error" style="display:none;margin-top:8px;padding:6px 10px;border-radius:6px;background:#fef2f2;color:#dc2626;font-size:.78rem"></div>
         </div>
         <div id="abates-hist-list"></div>
       </div>
@@ -398,6 +400,7 @@
             <button class="btn btn-primary btn-sm" onclick="addCusto()" data-i18n="form.save">Guardar</button>
             <button class="btn btn-ghost btn-sm" onclick="toggleCustosForm()" data-i18n="form.cancel">Cancelar</button>
           </div>
+          <div id="c-error" style="display:none;margin-top:8px;padding:6px 10px;border-radius:6px;background:#fef2f2;color:#dc2626;font-size:.78rem"></div>
         </div>
         <div id="custos-list"></div>
       </div>
@@ -428,23 +431,23 @@
             do contrato</span></div>
         <div class="field-row">
           <div class="field-label" data-i18n="config.initialCapital">Capital inicial (€)</div><input type="number"
-            id="cfg-capital" value="150000" min="0" step="1000" required oninput="recalc()">
+            id="cfg-capital" value="150000" min="0" step="1000" required oninput="recalcDebounced()">
         </div>
         <div class="field-row">
           <div class="field-label" data-i18n="config.termYears">Prazo total (anos)</div><input type="number"
-            id="cfg-prazo" value="30" min="1" max="50" required oninput="recalc()">
+            id="cfg-prazo" value="30" min="1" max="50" required oninput="recalcDebounced()">
         </div>
         <div class="field-row">
           <div class="field-label" data-i18n="config.fixedMonths">Meses taxa fixa</div><input type="number"
-            id="cfg-fixos" value="24" min="0" required oninput="recalc()">
+            id="cfg-fixos" value="24" min="0" required oninput="recalcDebounced()">
         </div>
         <div class="field-row">
           <div class="field-label" data-i18n="config.fixedRate">Taxa fixa anual (%)</div><input type="number"
-            id="cfg-fixa" value="3.00" min="0" max="20" step="0.01" required oninput="recalc()">
+            id="cfg-fixa" value="3.00" min="0" max="20" step="0.01" required oninput="recalcDebounced()">
         </div>
         <div class="field-row">
           <div class="field-label" data-i18n="config.spread">Spread (%)</div><input type="number" id="cfg-spread"
-            value="0.90" min="0" max="5" step="0.001" required oninput="recalc()">
+            value="0.90" min="0" max="5" step="0.001" required oninput="recalcDebounced()">
         </div>
         <div class="field-row">
           <div class="field-label"><span data-i18n="config.startDate">Data de início do crédito</span>

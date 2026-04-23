@@ -161,8 +161,10 @@ function buildSched(sc) {
 }
 
 function renderResumo() {
-  const hoje = cfgI('cfg-hoje'), C = cfg('cfg-capital');
-  const rows = buildSched('base'), rH = rows[hoje - 1];
+  const C = cfg('cfg-capital');
+  const rows = buildSched('base');
+  const hoje = Math.min(cfgI('cfg-hoje'), rows.length);
+  const rH = rows[hoje - 1];
   if (!rH) return;
   let jp = 0; for (let i = 0; i < hoje && i < rows.length; i++)jp += rows[i].jur;
   const pct = (C - rH.bal) / C * 100;
@@ -214,7 +216,8 @@ function renderCapitalChart(rows, hoje) {
   const t = i18n[lang] || i18n.pt;
   const ctx = document.getElementById('capital-chart').getContext('2d');
   const labels = rows.map((r, i) => i + 1);
-  const capitalData = rows.map(r => r.bal);
+  const capitalPast = rows.map((r, i) => i <= hoje - 1 ? r.bal : null);
+  const capitalFuture = rows.map((r, i) => i >= hoje - 1 ? r.bal : null);
   let cumJur = 0;
   const jurosData = rows.map((r, i) => { if (i < hoje) { cumJur += r.jur; return cumJur; } return null; });
   if (capitalChartInstance) { capitalChartInstance.destroy(); capitalChartInstance = null; }
@@ -224,9 +227,16 @@ function renderCapitalChart(rows, hoje) {
       labels,
       datasets: [{
         label: t.summary.chartCapital,
-        data: capitalData,
+        data: capitalPast,
         borderColor: 'var(--mid)',
         backgroundColor: 'rgba(44,82,130,0.1)',
+        fill: false
+      }, {
+        label: '_future',
+        data: capitalFuture,
+        borderColor: 'rgba(44,82,130,0.3)',
+        backgroundColor: 'transparent',
+        borderDash: [5, 4],
         fill: false
       }, {
         label: t.summary.chartInterest,
@@ -240,8 +250,15 @@ function renderCapitalChart(rows, hoje) {
       responsive: true,
       interaction: { mode: 'nearest', intersect: false },
       plugins: {
-        legend: { display: true },
-        tooltip: { enabled: true }
+        legend: {
+          display: true,
+          labels: { filter: item => item.text !== '_future' }
+        },
+        tooltip: {
+          enabled: true,
+          filter: item => item.raw != null && item.dataset.label !== '_future',
+          callbacks: { label: ctx => ctx.raw != null ? ctx.dataset.label + ': ' + EUR(ctx.raw) : null }
+        }
       },
       elements: {
         point: { radius: 0, hoverRadius: 6, hitRadius: 8 }
@@ -310,7 +327,13 @@ function renderTl() {
 function renderTbl(reset) {
   if (reset) tblRows = 36;
   const t = i18n[lang] || i18n.pt;
-  const hoje = cfgI('cfg-hoje'), rows = buildSched(tblSc), end = Math.min(tblRows, rows.length);
+  const hoje = cfgI('cfg-hoje'), rows = buildSched(tblSc);
+  if (!rows.length) {
+    document.getElementById('tbl-body').innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--steel)">—</td></tr>`;
+    document.getElementById('tbl-more').style.display = 'none';
+    return;
+  }
+  const end = Math.min(tblRows, rows.length);
   const scLbl = { hist: t.table.chipHist, opt: t.euribor.scenarioChartOpt, base: t.euribor.scenarioChartBase, pess: t.euribor.scenarioChartPess };
   const scLeg = { opt: '🟢 ' + t.euribor.scenarioOpt, base: '🟡 ' + t.euribor.scenarioBase, pess: '🔴 ' + t.euribor.scenarioPess };
   document.getElementById('tbl-sc-legend').textContent = '■ ' + scLeg[tblSc];
@@ -468,7 +491,9 @@ function addCusto() {
   const endMonthVal = document.getElementById('c-fim').value;
   const endMonth = endMonthVal ? parseInt(endMonthVal) : null;
   const t = i18n[lang] || i18n.pt;
-  if (!name || isNaN(amount) || amount <= 0) { alert(t.messages.fillCost); return; }
+  const errEl = document.getElementById('c-error');
+  if (!name || isNaN(amount) || amount <= 0) { if (errEl) { errEl.textContent = t.messages.fillCost; errEl.style.display = 'block'; } return; }
+  if (errEl) errEl.style.display = 'none';
   extraCosts.push({ name, amount, frequency, startMonth, endMonth });
   extraCosts.sort((a, b) => a.startMonth - b.startMonth);
   document.getElementById('c-nome').value = '';
@@ -489,7 +514,9 @@ function addAbateHist() {
   const penalRate = parseFloat(document.getElementById('ab-hist-penal')?.value ?? '0.5') || 0;
   const desc = document.getElementById('ab-hist-desc').value.trim();
   const t = i18n[lang] || i18n.pt;
-  if (!mes || isNaN(val) || val <= 0) { alert(t.messages.fillPrepay); return; }
+  const errEl = document.getElementById('ab-hist-error');
+  if (!mes || isNaN(val) || val <= 0) { if (errEl) { errEl.textContent = t.messages.fillPrepay; errEl.style.display = 'block'; } return; }
+  if (errEl) errEl.style.display = 'none';
   prepaymentsHistory.push({ month: mes, amount: val, option, penalRate, desc: desc || `${t.prepayment.tag} ${t.table.month} ${mes}` });
   prepaymentsHistory.sort((a, b) => a.month - b.month);
   document.getElementById('ab-hist-mes').value = '';
@@ -508,7 +535,9 @@ function addHist() {
   const eu = parseFloat(document.getElementById('ah-eu').value);
   const desc = document.getElementById('ah-desc').value.trim();
   const t = i18n[lang] || i18n.pt;
-  if (!mes || isNaN(eu)) { alert(t.messages.fillEuribor); return; }
+  const errEl = document.getElementById('ah-error');
+  if (!mes || isNaN(eu)) { if (errEl) { errEl.textContent = t.messages.fillEuribor; errEl.style.display = 'block'; } return; }
+  if (errEl) errEl.style.display = 'none';
   euriborHistory = euriborHistory.filter(h => h.startMonth !== mes);
   const rates = {};
   rates[euriborTenor] = eu;
@@ -612,6 +641,27 @@ function exportarDados() {
   a.click(); URL.revokeObjectURL(a.href);
 }
 
+function applyStateData(d) {
+  document.getElementById('cfg-capital').value = d.contract.capital;
+  document.getElementById('cfg-prazo').value = d.contract.termYears;
+  document.getElementById('cfg-fixos').value = d.contract.fixedMonths;
+  document.getElementById('cfg-fixa').value = d.contract.fixedRate;
+  document.getElementById('cfg-spread').value = d.contract.spread;
+  document.getElementById('cfg-hoje').value = d.contract.currentMonth;
+  if (d.contract.startMes) { const el = document.getElementById('cfg-inicio-mes'); if (el) el.value = d.contract.startMes; }
+  if (d.contract.startAno) { const el = document.getElementById('cfg-inicio-ano'); if (el) el.value = d.contract.startAno; }
+  if (d.contract.startMes && d.contract.startAno) { const el = document.getElementById('cfg-hoje'); if (el) { el.setAttribute('readonly', ''); el.style.color = 'var(--steel)'; } }
+  if (d.contract.paymentDay) { const el = document.getElementById('cfg-dia-pagamento'); if (el) el.value = d.contract.paymentDay; }
+  euriborHistory = d.euriborHistory;
+  prepaymentsHistory = d.prepaymentsHistory || [];
+  extraCosts = d.extraCosts || [];
+  if (d.scenarios) {
+    scenarioRates.opt = d.scenarios.optimistic || scenarioRates.opt;
+    scenarioRates.base = d.scenarios.base || scenarioRates.base;
+    scenarioRates.pess = d.scenarios.pessimistic || scenarioRates.pess;
+  }
+}
+
 function importarDados(e) {
   const file = e.target.files[0]; if (!file) return;
   const reader = new FileReader();
@@ -620,24 +670,7 @@ function importarDados(e) {
     try {
       const d = JSON.parse(ev.target.result);
       if (!d.contract || !d.euriborHistory || !d.scenarios) throw new Error('Ficheiro inválido');
-      document.getElementById('cfg-capital').value = d.contract.capital;
-      document.getElementById('cfg-prazo').value = d.contract.termYears;
-      document.getElementById('cfg-fixos').value = d.contract.fixedMonths;
-      document.getElementById('cfg-fixa').value = d.contract.fixedRate;
-      document.getElementById('cfg-spread').value = d.contract.spread;
-      document.getElementById('cfg-hoje').value = d.contract.currentMonth;
-      if (d.contract.startMes) { const el = document.getElementById('cfg-inicio-mes'); if (el) el.value = d.contract.startMes; }
-      if (d.contract.startAno) { const el = document.getElementById('cfg-inicio-ano'); if (el) el.value = d.contract.startAno; }
-      if (d.contract.startMes && d.contract.startAno) { const el = document.getElementById('cfg-hoje'); if (el) { el.setAttribute('readonly', ''); el.style.color = 'var(--steel)'; } }
-      if (d.contract.paymentDay) { const el = document.getElementById('cfg-dia-pagamento'); if (el) el.value = d.contract.paymentDay; }
-      euriborHistory = d.euriborHistory;
-      prepaymentsHistory = d.prepaymentsHistory || [];
-      extraCosts = d.extraCosts || [];
-      if (d.scenarios) {
-        scenarioRates.opt = d.scenarios.optimistic || scenarioRates.opt;
-        scenarioRates.base = d.scenarios.base || scenarioRates.base;
-        scenarioRates.pess = d.scenarios.pessimistic || scenarioRates.pess;
-      }
+      applyStateData(d);
       updateScenarioInputs();
       recalc();
       const t = i18n[lang] || i18n.pt;
@@ -703,25 +736,8 @@ function loadFromStorage() {
     if (!raw) return false;
     const d = JSON.parse(raw);
     if (!d.contract || !d.euriborHistory || !d.scenarios) return false;
-    document.getElementById('cfg-capital').value = d.contract.capital;
-    document.getElementById('cfg-prazo').value = d.contract.termYears;
-    document.getElementById('cfg-fixos').value = d.contract.fixedMonths;
-    document.getElementById('cfg-fixa').value = d.contract.fixedRate;
-    document.getElementById('cfg-spread').value = d.contract.spread;
-    document.getElementById('cfg-hoje').value = d.contract.currentMonth;
-    if (d.contract.startMes) { const el = document.getElementById('cfg-inicio-mes'); if (el) el.value = d.contract.startMes; }
-    if (d.contract.startAno) { const el = document.getElementById('cfg-inicio-ano'); if (el) el.value = d.contract.startAno; }
-    if (d.contract.startMes && d.contract.startAno) { const el = document.getElementById('cfg-hoje'); if (el) { el.setAttribute('readonly', ''); el.style.color = 'var(--steel)'; } }
-    if (d.contract.paymentDay) { const el = document.getElementById('cfg-dia-pagamento'); if (el) el.value = d.contract.paymentDay; }
-    euriborHistory = d.euriborHistory;
-    prepaymentsHistory = d.prepaymentsHistory || [];
-    extraCosts = d.extraCosts || [];
+    applyStateData(d);
     if (typeof d.euriborTenor === 'number') euriborTenor = d.euriborTenor;
-    if (d.scenarios) {
-      scenarioRates.opt = d.scenarios.optimistic || scenarioRates.opt;
-      scenarioRates.base = d.scenarios.base || scenarioRates.base;
-      scenarioRates.pess = d.scenarios.pessimistic || scenarioRates.pess;
-    }
     updateScenarioInputs();
     document.querySelectorAll('.euribor-tenor-btn').forEach(b => b.classList.remove('active'));
     const activeBtn = document.querySelector(`.euribor-tenor-btn[data-tenor="${euriborTenor}"]`);
@@ -738,6 +754,8 @@ function clearStorage() {
 }
 
 // ── RECALC (saves to storage on every change) ──────────
+let _recalcTimer;
+function recalcDebounced() { clearTimeout(_recalcTimer); _recalcTimer = setTimeout(recalc, 250); }
 function recalc() {
   try {
     renderResumo();
