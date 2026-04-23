@@ -109,8 +109,9 @@ function getEuAt(mes, sc) {
 
 function buildSched(sc) {
   const C = cfg('cfg-capital'), N = cfgI('cfg-prazo') * 12, F = cfgI('cfg-fixos');
+  if (!C || !N) return [];
   const rF = cfg('cfg-fixa') / 100 / 12, sp = cfg('cfg-spread') / 100;
-  const pmtF = C * rF / (1 - Math.pow(1 + rF, -N));
+  const pmtF = rF > 0 ? C * rF / (1 - Math.pow(1 + rF, -N)) : C / N;
   let bal = C, rows = [];
   const startDate = getStartDateOrFallback();
   const payDay = cfgI('cfg-dia-pagamento') || 1;
@@ -169,7 +170,7 @@ function renderResumo() {
   document.getElementById('r-jpagos').textContent = EUR(jp);
   const t = i18n[lang] || i18n.pt;
   document.getElementById('r-mrest').textContent = (rows.length - hoje) + ' ' + t.summary.monthsLabel;
-  document.getElementById('r-pct').textContent = pct.toFixed(1) + t.summary.pctAmortized;
+  document.getElementById('r-pct').textContent = EUR(C - rH.bal) + ' (' + pct.toFixed(1) + t.summary.pctAmortized + ')';
   document.getElementById('r-bar').style.width = pct + '%';
   document.getElementById('r-data').textContent = `${t.summary.month} ${hoje} · ${fmtM(hoje)}`;
   const nR = rows[hoje];
@@ -214,7 +215,8 @@ function renderCapitalChart(rows, hoje) {
   const ctx = document.getElementById('capital-chart').getContext('2d');
   const labels = rows.map((r, i) => i + 1);
   const capitalData = rows.map(r => r.bal);
-  const jurosData = rows.map((r, i) => i < hoje ? r.jur : null);
+  let cumJur = 0;
+  const jurosData = rows.map((r, i) => { if (i < hoje) { cumJur += r.jur; return cumJur; } return null; });
   if (capitalChartInstance) { capitalChartInstance.destroy(); capitalChartInstance = null; }
   capitalChartInstance = new Chart(ctx, {
     type: 'line',
