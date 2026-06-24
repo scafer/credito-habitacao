@@ -635,6 +635,29 @@ tbody tr:hover td {
   background: #fdf5f4
 }
 
+.row-prepay {
+  background: #f0fdf7
+}
+
+.row-prepay td {
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom: 2px dashed #a7f3d0
+}
+
+.prepay-detail {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: .74rem
+}
+
+.chip-prepay {
+  background: #d1fae5;
+  color: #065f46
+}
+
 .chip {
   display: inline-block;
   padding: 2px 7px;
