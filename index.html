@@ -30,10 +30,28 @@
       </div>
     </div>
   </header>
+  <div class="loan-bar">
+    <div class="loan-bar-inner">
+      <span class="loan-bar-label" data-i18n="loans.label">Crédito:</span>
+      <select id="loan-select" onchange="switchLoan(this.value)"></select>
+      <div class="loan-bar-actions">
+        <button id="btn-loan-new" class="btn btn-ghost btn-sm" onclick="createLoan()"
+          data-i18n="loans.new">+ Novo</button>
+        <button id="btn-loan-rename" class="btn btn-ghost btn-sm" onclick="renameLoan()"
+          aria-label="Renomear crédito" title="Renomear crédito">✎</button>
+        <button id="btn-loan-duplicate" class="btn btn-ghost btn-sm" onclick="duplicateLoan()"
+          aria-label="Duplicar crédito" title="Duplicar crédito">⧉</button>
+        <button id="btn-loan-delete" class="btn btn-danger btn-sm" onclick="deleteLoan()"
+          aria-label="Eliminar crédito" title="Eliminar crédito">✕</button>
+      </div>
+    </div>
+  </div>
   <div class="tabs-bar">
     <div class="tabs-inner" role="tablist">
       <div class="tab active" onclick="showTab('resumo',this)" role="tab" aria-selected="true" id="tab-resumo"
         data-i18n="tabs.resumo">Resumo</div>
+      <div class="tab" onclick="showTab('agregado',this)" role="tab" aria-selected="false" id="tab-agregado"
+        data-i18n="tabs.agregado">Todos os créditos</div>
       <div class="tab" onclick="showTab('euribor',this)" role="tab" aria-selected="false" id="tab-euribor"
         data-i18n="tabs.euribor">Euribor &amp; Cenários</div>
       <div class="tab" onclick="showTab('tabela',this)" role="tab" aria-selected="false" id="tab-tabela"
@@ -117,6 +135,42 @@
           style="display:none;background:var(--fog);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:.75rem;color:var(--steel)">
         </div>
         <div class="info" id="r-info"></div>
+      </div>
+    </div>
+
+    <!-- AGREGADO -->
+    <div class="panel" id="panel-agregado">
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title"><span class="dot"></span><span data-i18n="aggregate.title">Todos os
+              créditos</span></div>
+        </div>
+        <div class="stat-grid" style="margin-bottom:14px">
+          <div class="stat accent">
+            <div class="stat-label" data-i18n="aggregate.totalCapital">Capital em dívida total</div>
+            <div class="stat-val" id="ag-total-capital">—</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label" data-i18n="aggregate.totalPayment">Prestação mensal total</div>
+            <div class="stat-val" id="ag-total-pmt">—</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label" data-i18n="summary.interestPaid">Juros pagos até hoje</div>
+            <div class="stat-val" id="ag-total-jpagos">—</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label" data-i18n="aggregate.count">Créditos activos</div>
+            <div class="stat-val" id="ag-count">—</div>
+          </div>
+        </div>
+        <div id="agregado-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title"><span class="dot"></span><span data-i18n="aggregate.chartTitle">Capital em dívida
+              por crédito</span></div>
+        </div>
+        <canvas id="aggregate-chart" width="400" height="200"></canvas>
       </div>
     </div>
 

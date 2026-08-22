@@ -107,6 +107,45 @@ body {
   border-bottom-color: var(--gold2)
 }
 
+.loan-bar {
+  background: var(--ink2);
+  border-bottom: 1px solid var(--border)
+}
+
+.loan-bar-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 8px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap
+}
+
+.loan-bar-label {
+  font-size: .72rem;
+  color: rgba(255, 255, 255, .5);
+  flex-shrink: 0
+}
+
+#loan-select {
+  border: 1px solid rgba(255, 255, 255, .2);
+  border-radius: 6px;
+  background: var(--ink);
+  color: var(--white);
+  padding: 5px 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: .78rem;
+  font-weight: 500;
+  max-width: 220px
+}
+
+.loan-bar-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto
+}
+
 .main {
   max-width: 960px;
   margin: 0 auto;
@@ -905,5 +944,13 @@ tbody tr:hover td {
   .tab {
     padding: 10px 12px;
     font-size: 0.7rem;
+  }
+
+  .loan-bar-inner {
+    padding: 8px 10px;
+  }
+
+  .loan-bar-actions {
+    margin-left: 0;
   }
 }
