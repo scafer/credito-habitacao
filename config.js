@@ -2,7 +2,7 @@
 const CONFIG = {
   // App versions and storage
   APP_VERSION: '2.1.0',
-  LS_KEY: 'loan_tracker_v2',
+  LS_KEY: 'mortgage_tracker_v1',
 
   // EURIBOR tenor values (in months)
   EURIBOR_TENORS: [3, 6, 12],

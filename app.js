@@ -8,9 +8,10 @@ let scenarioRates = {
 };
 let prepaymentsHistory = [];
 let extraCosts = [];
-let tlSc = 'base', tblSc = 'base', tblRows = 36, abatesImpactSc = 'base';
+let tlSc = 'base', tblSc = 'base', tblRows = CONFIG.TABLE.INITIAL_ROWS, abatesImpactSc = 'base';
 let capitalChartInstance = null;
 let aggregateChartInstance = null;
+let euriborChartInstance = null;
 let lang = 'pt';
 let loans = [];
 let activeLoanId = null;
@@ -18,42 +19,67 @@ let activeLoanId = null;
 // I18N
 const i18n = {
   pt: {
-    tabs: { resumo: 'Resumo', agregado: 'Todos os créditos', euribor: 'Euribor & Cenários', tabela: 'Plano', abates: 'Abates', custos: 'Custos', config: 'Configuração', ajuda: 'Ajuda' },
+    tabs: { resumo: 'Resumo', agregado: 'Todos os créditos', euribor: 'Euribor & Cenários', tabela: 'Plano', abates: 'Abates', custos: 'Custos', comparador: 'Comparador', config: 'Configuração', ajuda: 'Ajuda' },
     loans: { label: 'Crédito:', new: '+ Novo', renameTitle: 'Renomear crédito', duplicateTitle: 'Duplicar crédito', deleteTitle: 'Eliminar crédito', namePrompt: 'Nome do crédito', newDefaultName: 'Novo crédito', defaultName: 'Crédito Principal', copySuffix: '(cópia)', importedName: 'Crédito importado', activeTag: 'Activo', confirmDelete: 'Tens a certeza que queres eliminar este crédito? Esta acção não pode ser desfeita.', cannotDeleteLast: 'Não é possível eliminar o único crédito. Cria outro primeiro.' },
     aggregate: { title: 'Todos os créditos', totalCapital: 'Capital em dívida total', totalPayment: 'Prestação mensal total', count: 'Créditos activos', chartTitle: 'Capital em dívida por crédito', loan: 'Crédito', total: 'Total', noLoans: 'Sem créditos registados.' },
     brand: { title: 'Crédito Habitação', subtitle: 'Simulador · Histórico · Cenários' },
     summary: { title: 'Situação actual', timeline: 'Evolução do capital', cost: 'Custo total estimado — por cenário', capitalDebt: 'Capital em dívida', currentPayment: 'Prestação actual', interestPaid: 'Juros pagos até hoje', remainingMonths: 'Meses restantes', capitalProgress: 'Capital amortizado', chartCapital: 'Capital em dívida (€)', chartInterest: 'Juros pagos (€)', chartMonth: 'Mês', chartValue: 'Valor (€)', monthsLabel: 'meses', pctAmortized: '% amortizado', totalLabel: 'total', interestLabel: 'em juros', costsLabel: 'custos adicionais', costBreakdown: 'Decomposição (cenário base)', lastRateLabel: 'Última Euribor registada', nextReviewLabel: 'Próxima revisão esperada', none: 'Nenhuma', month: 'mês', fromMonth: 'desde mês' },
-    euribor: { history: 'Histórico de revisões (real)', future: 'Cenários futuros (previsão)', timeline: 'Linha do tempo — Euribor aplicada', tenor: 'Euribor tenor:', tenorLabel: 'Euribor {tenor}M (%)', futureInfo: 'Define os três cenários para os períodos futuros ainda sem revisão confirmada.', noHistory: 'Sem revisões. Adiciona a primeira revisão trimestral.', scenarioOpt: '🟢 Cenário Optimista', scenarioBase: '🟡 Cenário Base', scenarioPess: '🔴 Cenário Pessimista', scenarioChartOpt: 'Opt.', scenarioChartBase: 'Base', scenarioChartPess: 'Pess.', fixedRateDesc: 'Taxa fixa contratual', scenarioForecast: 'Cenário {scenario} (previsão)', rateFormula: 'Euribor {eu} + {sp} = {taxa}' },
-    table: { title: 'Plano de amortização', legendFixed: '■ Fixa', legendHist: '■ Histórico', legendToday: '■ Hoje', legendSc: '■ Cenário', legendPrepay: '■ Abate', months: 'Meses', month: 'Mês', date: 'Data', payment: 'Prestação', interest: 'Juros', amort: 'Amortiz.', capital: 'Capital', euribor: 'Euribor', chipToday: 'Hoje', chipFixed: 'Fixa', chipHist: 'Real', chipOpt: 'Opt.', chipBase: 'Base', chipPess: 'Pess.' },
-    prepayment: { title: 'Abates realizados', simulator: 'Simular abate antecipado', register: 'Registar abate', creditMonth: 'Mês do crédito em que foi feito', amountAmortized: 'Valor amortizado (€)', optionAfter: 'Opção após abate', penaltyRate: 'Taxa de penalização', penaltyVar: '0,5% (taxa variável)', penaltyFixed: '2% (taxa fixa)', scenarioFuture: 'Cenário Euribor futura', capitalAtPrepay: 'Capital no mês do abate', capitalAfterPay: 'Capital após abate', interestWithout: 'Juros restantes SEM abate', interestWith: 'Juros restantes COM abate', penaltyLabel: 'Penalização ({pct}% do capital amortizado)', warning: '⚠️ Verifique a penalização contratual por abate antecipado — habitualmente <strong>0,5%</strong> em taxa variável ou <strong>2%</strong> em taxa fixa.', savings: '💰 Poupança total em juros', optionTerm: 'Reduzir prazo', optionPayment: 'Reduzir prestação', prepayMonth: 'Mês em que faria o abate', prepayMonthHint: 'Nº do mês do crédito', prepayValue: 'Valor do abate (€)', prepayValueHint: 'Montante a amortizar', newPayment: 'Nova prestação mensal', reductionLabel: 'Redução no prazo', monthsLess: '{n} meses menos', noHistory: 'Sem abates registados.', historyTextTerm: 'Reduziu prazo', historyTextPayment: 'Reduziu prestação', tag: 'Abate', optionChoice: 'Opção escolhida' },
+    euribor: { history: 'Histórico de revisões (real)', future: 'Cenários futuros (previsão)', timeline: 'Linha do tempo — Euribor aplicada', tenor: 'Euribor tenor:', tenorLabel: 'Euribor {tenor}M (%)', futureInfo: 'Define os três cenários para os períodos futuros ainda sem revisão confirmada.', noHistory: 'Sem revisões. Adiciona a primeira revisão trimestral.', scenarioOpt: '🟢 Cenário Optimista', scenarioBase: '🟡 Cenário Base', scenarioPess: '🔴 Cenário Pessimista', scenarioChartOpt: 'Opt.', scenarioChartBase: 'Base', scenarioChartPess: 'Pess.', fixedRateDesc: 'Taxa fixa contratual', scenarioForecast: 'Cenário {scenario} (previsão)', rateFormula: 'Euribor {eu} + {sp} = {taxa}', importBtn: '🔄 Importar (BdP)', importing: 'A importar…', importNoStartDate: '⚠️ Define a data de início do crédito em Configuração antes de importar a Euribor.', importSuccess: '✅ Importada a Euribor de {date} (mês {month} do crédito).', importError: '❌ Não foi possível importar a Euribor agora. Tenta novamente mais tarde ou adiciona manualmente.', importMonthNotFound: '❌ Sem dados do Banco de Portugal para esse mês — escolhe outro.', importedDesc: 'Euribor {date} (Banco de Portugal)', chartApplied: 'Euribor aplicada (%)', chartAxis: 'Euribor (%)' },
+    table: { title: 'Plano de amortização', legendFixed: '■ Fixa', legendHist: '■ Histórico', legendToday: '■ Hoje', legendSc: '■ Cenário', legendPrepay: '■ Abate', months: 'Meses', month: 'Mês', date: 'Data', payment: 'Prestação', interest: 'Juros', amort: 'Amortiz.', capital: 'Capital', euribor: 'Euribor', chipToday: 'Hoje', chipFixed: 'Fixa', chipHist: 'Real', chipOpt: 'Opt.', chipBase: 'Base', chipPess: 'Pess.', exportCsv: '⬇ CSV' },
+    prepayment: { title: 'Abates realizados', simulator: 'Simular abate antecipado', register: 'Registar abate', creditMonth: 'Mês do crédito em que foi feito', amountAmortized: 'Valor amortizado (€)', optionAfter: 'Opção após abate', penaltyRate: 'Taxa de penalização', penaltyVar: '0,5% (taxa variável)', penaltyFixed: '2% (taxa fixa)', scenarioFuture: 'Cenário Euribor futura', capitalAtPrepay: 'Capital no mês do abate', capitalAfterPay: 'Capital após abate', interestWithout: 'Juros restantes SEM abate', interestWith: 'Juros restantes COM abate', penaltyLabel: 'Penalização ({pct}% do capital amortizado)', warning: '⚠️ Verifique a penalização contratual por abate antecipado — habitualmente <strong>0,5%</strong> em taxa variável ou <strong>2%</strong> em taxa fixa.', savings: '💰 Poupança total em juros', optionTerm: 'Reduzir prazo', optionPayment: 'Reduzir prestação', prepayMonth: 'Mês em que faria o abate', prepayMonthHint: 'Nº do mês do crédito', prepayValue: 'Valor do abate (€)', prepayValueHint: 'Montante a amortizar', newPayment: 'Nova prestação mensal', reductionLabel: 'Redução no prazo', monthsLess: '{n} meses menos', noHistory: 'Sem abates registados.', historyTextTerm: 'Reduziu prazo', historyTextPayment: 'Reduziu prestação', tag: 'Abate', optionChoice: 'Opção escolhida', scenarioCustom: 'Personalizado', customRateLabel: 'Taxa Euribor personalizada (%)' },
     config: { title: 'Dados do contrato', initialCapital: 'Capital inicial (€)', termYears: 'Prazo total (anos)', fixedMonths: 'Meses taxa fixa', fixedRate: 'Taxa fixa anual (%)', spread: 'Spread (%)', startDate: 'Data de início do crédito', startDateHint: 'Mês e ano da primeira prestação', paymentDay: 'Dia do pagamento', paymentDayHint: 'Dia do mês em que é debitada a prestação', exportImport: 'Exportar / Importar dados', exportInfo: 'Guarda todos os dados (contrato, histórico Euribor e cenários) num ficheiro .json. Importa quando quiseres recuperar tudo.', export: '⬇ Exportar dados', import: '⬆ Importar dados', autoSave: '💾 Gravação automática no browser activa', clear: '🗑 Limpar dados locais', currentMonths: 'Meses decorridos hoje', currentMonthsHint: 'Calculado automaticamente se definires a data de início' },
     about: { title: 'Sobre a Calculadora de Habitação', text: 'Uma ferramenta gratuita e open-source para simular e acompanhar empréstimos à habitação. Permite calcular prestações, juros totais, cenários futuros com diferentes taxas de revisão e simular amortizações antecipadas.', features: 'Funcionalidades principais:', cta: 'Contribuições, sugestões e correções são muito bem-vindas! Abra um issue ou pull request no repositório.', feature1: 'Simulação de plano de pagamentos com taxa fixa e variável', feature2: 'Histórico de revisões de taxa Euribor', feature3: 'Cenários optimista, base e pessimista para previsões', feature4: 'Simulação de amortizações antecipadas', feature5: 'Dados guardados automaticamente no browser', source: 'Código fonte', sourceSub: 'Disponível no GitHub com licença MIT', github: 'Ver no GitHub' },
     costs: { title: 'Custos adicionais', add: '+ Adicionar custo', noCosts: 'Sem custos registados. Adiciona seguros, taxa de manutenção ou outras despesas recorrentes.', name: 'Designação', amount: 'Valor (€)', frequency: 'Frequência', monthly: 'Mensal', annual: 'Anual', oneTime: 'Pontual', startMonth: 'Mês início (crédito)', endMonth: 'Mês fim (opcional)', desc: 'Descrição (opcional)', summary: 'Resumo de custos', monthlyTotal: 'Custo mensal actual', paidToDate: 'Total pago até hoje', projected: 'Total projetado (vida do crédito)', perMonth: '/mês', fromMonth: 'Mês', tag: 'Custo', noEndMonth: 'sem fim definido' },
-    guide: { title: 'Guia de utilização', tabs: 'O que faz cada separador', tabResumo: '📊 Resumo — visão geral do crédito: capital em dívida, prestação actual, juros pagos e evolução gráfica do capital.', tabEuribor: '📈 Euribor & Cenários — regista revisões reais da Euribor e define três cenários futuros (optimista, base, pessimista).', tabPlano: '📋 Plano — tabela completa de amortização mês a mês, com destaque para o mês actual.', tabAbates: '💰 Abates — regista abates antecipados realizados e simula o impacto de futuros abates no custo total.', tabCustos: '🧾 Custos — regista despesas recorrentes como seguros de vida, multiriscos e taxas de manutenção.', tabConfig: '⚙️ Configuração — dados do contrato, data de início, exportação e importação de dados.', storage: 'Onde estão os dados', storageText: 'Todos os dados são guardados exclusivamente no teu browser (localStorage). Não são enviados para nenhum servidor. Se limpares o cache ou os dados do browser, os dados são apagados.', storageExport: '💡 Para não perderes os dados, usa a função Exportar em Configuração → Exportar / Importar dados. Guarda o ficheiro .json num local seguro.', exportImport: 'Exportar e importar dados', exportText: 'Em Configuração, clica em ⬇ Exportar dados para guardar tudo num ficheiro JSON. Para restaurar, clica em ⬆ Importar dados e selecciona o ficheiro. Útil para mudar de browser ou fazer backup.', calcTitle: 'Notas sobre os cálculos', calcText: 'O plano usa o método de amortização francês (prestação constante). Em períodos de taxa variável, a prestação é recalculada com base em: Euribor + spread, capital em dívida e meses restantes. Os cenários futuros são estimativas — a taxa real pode diferir.', aboutTitle: 'Sobre o projecto' },
+    refi: { title: 'Comparar com trocar de banco', info: 'Simula transferir o crédito para outro banco a partir de um determinado mês, com um novo spread (e, opcionalmente, um novo período de taxa fixa), face a manter o crédito actual.', switchMonth: 'Mês da troca', switchMonthHint: 'Nº do mês do crédito', newSpread: 'Novo spread (%)', newFixedMonths: 'Novos meses de taxa fixa', newFixedMonthsHint: '0 se ficar logo em taxa variável', newFixedRate: 'Nova taxa fixa anual (%)', transferCost: 'Custos de transferência (€)', transferCostHint: 'Comissões, escritura, registo, etc.', scenarioFuture: 'Cenário Euribor futura', savings: '💰 Poupança líquida ao trocar de banco', interestStay: 'Juros restantes — crédito actual', interestSwitch: 'Juros restantes — banco novo', capitalAtSwitch: 'Capital na troca', newPayment: 'Nova prestação mensal', warning: '⚠️ Estimativa simplificada — não inclui eventuais penalizações contratuais por transferência no crédito actual nem custos de avaliação do imóvel.', worse: '⚠️ Trocar de banco custaria mais {amount} do que manter o crédito actual.' },
+    guide: { title: 'Guia de utilização', tabs: 'O que faz cada separador', tabResumo: '📊 Resumo — visão geral do crédito: capital em dívida, prestação actual, juros pagos e evolução gráfica do capital.', tabEuribor: '📈 Euribor & Cenários — regista revisões reais da Euribor e define três cenários futuros (optimista, base, pessimista).', tabPlano: '📋 Plano — tabela completa de amortização mês a mês, com destaque para o mês actual.', tabAbates: '💰 Abates — regista abates antecipados realizados e simula o impacto de futuros abates no custo total.', tabCustos: '🧾 Custos — regista despesas recorrentes como seguros de vida, multiriscos e taxas de manutenção.', tabComparador: '🏦 Comparador — simula o impacto de trocar o crédito para outro banco a partir de um determinado mês.', tabConfig: '⚙️ Configuração — dados do contrato, data de início, exportação e importação de dados.', storage: 'Onde estão os dados', storageText: 'Todos os dados são guardados exclusivamente no teu browser (localStorage). Não são enviados para nenhum servidor. Se limpares o cache ou os dados do browser, os dados são apagados.', storageExport: '💡 Para não perderes os dados, usa a função Exportar em Configuração → Exportar / Importar dados. Guarda o ficheiro .json num local seguro.', exportImport: 'Exportar e importar dados', exportText: 'Em Configuração, clica em ⬇ Exportar dados para guardar tudo num ficheiro JSON. Para restaurar, clica em ⬆ Importar dados e selecciona o ficheiro. Útil para mudar de browser ou fazer backup.', calcTitle: 'Notas sobre os cálculos', calcText: 'O plano usa o método de amortização francês (prestação constante). Em períodos de taxa variável, a prestação é recalculada com base em: Euribor + spread, capital em dívida e meses restantes. Os cenários futuros são estimativas — a taxa real pode diferir.', aboutTitle: 'Sobre o projecto' },
     form: { add: 'Adicionar', save: 'Guardar', cancel: 'Cancelar', removeData: 'Limpar dados locais', startMonth: 'Mês de início (nº do mês do crédito)', euriborFuture: 'Euribor futura (%)', description: 'Descrição (opcional)' },
-    messages: { fillPrepay: 'Preenche o mês e o valor do abate.', fillEuribor: 'Preenche o mês e a taxa Euribor.', fillCost: 'Indica pelo menos a designação e o valor.', confirmClear: 'Tens a certeza que queres apagar todos os dados guardados localmente?', imported: '✅ Dados importados com sucesso! Exportado em: {date}', importedAsNew: '✅ Dados importados como um novo crédito ("Crédito importado").', importError: '❌ Erro ao importar: {error}', restored: '✅ Dados restaurados automaticamente da memória do browser.', noSaved: 'ℹ️ Sem dados guardados — a usar valores predefinidos.', toggleLang: 'Mudar idioma', addEuribor: 'Adicionar revisão Euribor', exportData: 'Exportar dados para ficheiro JSON', importData: 'Importar dados de ficheiro JSON', clearData: 'Limpar todos os dados locais' },
+    messages: { fillPrepay: 'Preenche o mês e o valor do abate.', fillEuribor: 'Preenche o mês e a taxa Euribor.', fillCost: 'Indica pelo menos a designação e o valor.', confirmClear: 'Tens a certeza que queres apagar todos os dados guardados localmente?', imported: '✅ Dados importados com sucesso! Exportado em: {date}', importedAsNew: '✅ Dados importados como um novo crédito ("Crédito importado").', importError: '❌ Erro ao importar: {error}', restored: '✅ Dados restaurados automaticamente da memória do browser.', noSaved: 'ℹ️ Sem dados guardados — a usar valores predefinidos.', toggleLang: 'Mudar idioma', toggleTheme: 'Mudar tema', addEuribor: 'Adicionar revisão Euribor', exportData: 'Exportar dados para ficheiro JSON', importData: 'Importar dados de ficheiro JSON', clearData: 'Limpar todos os dados locais', undo: 'Desfazer', undoCusto: 'Custo "{name}" removido.', undoAbate: 'Abate do mês {month} removido.', undoEuribor: 'Revisão do mês {month} removida.', errCapital: 'O capital inicial deve ser superior a 0€.', errPrazo: 'O prazo total deve ser superior a 0 anos.', errFixos: 'Os meses de taxa fixa devem estar entre 0 e a duração total do crédito.', errHoje: 'Os meses decorridos devem estar entre 0 e a duração total do crédito.', backupWarnNever: 'Ainda não exportaste um backup dos teus dados. Guarda um ficheiro .json em Configuração.', backupWarnSince: 'Já passaram {days} dias desde o último backup. Considera exportar os teus dados em Configuração.' },
   },
   en: {
-    tabs: { resumo: 'Summary', agregado: 'All loans', euribor: 'Euribor & Scenarios', tabela: 'Plan', abates: 'Prepayments', custos: 'Costs', config: 'Settings', ajuda: 'Guide' },
+    tabs: { resumo: 'Summary', agregado: 'All loans', euribor: 'Euribor & Scenarios', tabela: 'Plan', abates: 'Prepayments', custos: 'Costs', comparador: 'Compare', config: 'Settings', ajuda: 'Guide' },
     loans: { label: 'Loan:', new: '+ New', renameTitle: 'Rename loan', duplicateTitle: 'Duplicate loan', deleteTitle: 'Delete loan', namePrompt: 'Loan name', newDefaultName: 'New loan', defaultName: 'Main loan', copySuffix: '(copy)', importedName: 'Imported loan', activeTag: 'Active', confirmDelete: 'Are you sure you want to delete this loan? This action cannot be undone.', cannotDeleteLast: 'You cannot delete the only loan. Create another one first.' },
     aggregate: { title: 'All loans', totalCapital: 'Total outstanding capital', totalPayment: 'Total monthly payment', count: 'Active loans', chartTitle: 'Outstanding capital by loan', loan: 'Loan', total: 'Total', noLoans: 'No loans registered.' },
     brand: { title: 'Mortgage Calculator', subtitle: 'Simulator · History · Scenarios' },
     summary: { title: 'Current situation', timeline: 'Capital evolution', cost: 'Estimated total cost — per scenario', capitalDebt: 'Outstanding capital', currentPayment: 'Current payment', interestPaid: 'Interest paid to date', remainingMonths: 'Remaining months', capitalProgress: 'Capital amortized', chartCapital: 'Outstanding capital (€)', chartInterest: 'Interest paid (€)', chartMonth: 'Month', chartValue: 'Value (€)', monthsLabel: 'months', pctAmortized: '% amortized', totalLabel: 'total', interestLabel: 'interest', costsLabel: 'additional costs', costBreakdown: 'Breakdown (base scenario)', lastRateLabel: 'Last recorded Euribor', nextReviewLabel: 'Next expected review', none: 'None', month: 'month', fromMonth: 'since month' },
-    euribor: { history: 'History of revisions (actual)', future: 'Future scenarios (forecast)', timeline: 'Timeline — Applied Euribor', tenor: 'Euribor tenor:', tenorLabel: 'Euribor {tenor}M (%)', futureInfo: 'Set the three scenarios for future periods without confirmed review yet.', noHistory: 'No revisions. Add the first quarterly revision.', scenarioOpt: '🟢 Optimistic Scenario', scenarioBase: '🟡 Base Scenario', scenarioPess: '🔴 Pessimistic Scenario', scenarioChartOpt: 'Opt.', scenarioChartBase: 'Base', scenarioChartPess: 'Pess.', fixedRateDesc: 'Contracted fixed rate', scenarioForecast: 'Scenario {scenario} (forecast)', rateFormula: 'Euribor {eu} + {sp} = {taxa}' },
-    table: { title: 'Amortization plan', legendFixed: '■ Fixed', legendHist: '■ Historical', legendToday: '■ Today', legendSc: '■ Scenario', legendPrepay: '■ Prepayment', months: 'Months', month: 'Month', date: 'Date', payment: 'Payment', interest: 'Interest', amort: 'Amort.', capital: 'Capital', euribor: 'Euribor', chipToday: 'Today', chipFixed: 'Fixed', chipHist: 'Historical', chipOpt: 'Opt.', chipBase: 'Base', chipPess: 'Pess.' },
-    prepayment: { title: 'Recorded prepayments', simulator: 'Simulate early prepayment', register: 'Register prepayment', creditMonth: 'Credit month when made', amountAmortized: 'Amortized amount (€)', optionAfter: 'Option after prepayment', penaltyRate: 'Penalty rate', penaltyVar: '0.5% (variable rate)', penaltyFixed: '2% (fixed rate)', scenarioFuture: 'Future Euribor scenario', capitalAtPrepay: 'Capital at prepayment month', capitalAfterPay: 'Capital after prepayment', interestWithout: 'Interest remaining WITHOUT prepayment', interestWith: 'Interest remaining WITH prepayment', penaltyLabel: 'Penalty ({pct}% of amortized capital)', warning: '⚠️ Check contractual penalty for early prepayment — usually <strong>0.5%</strong> for variable rate or <strong>2%</strong> for fixed rate.', savings: '💰 Total interest savings', optionTerm: 'Reduce term', optionPayment: 'Reduce payment', prepayMonth: 'Month for prepayment', prepayMonthHint: 'Credit month number', prepayValue: 'Prepayment amount (€)', prepayValueHint: 'Amount to amortize', newPayment: 'New monthly payment', reductionLabel: 'Term reduction', monthsLess: '{n} months less', noHistory: 'No recorded prepayments.', historyTextTerm: 'Term reduced', historyTextPayment: 'Payment reduced', tag: 'Prepayment', optionChoice: 'Chosen option' },
+    euribor: { history: 'History of revisions (actual)', future: 'Future scenarios (forecast)', timeline: 'Timeline — Applied Euribor', tenor: 'Euribor tenor:', tenorLabel: 'Euribor {tenor}M (%)', futureInfo: 'Set the three scenarios for future periods without confirmed review yet.', noHistory: 'No revisions. Add the first quarterly revision.', scenarioOpt: '🟢 Optimistic Scenario', scenarioBase: '🟡 Base Scenario', scenarioPess: '🔴 Pessimistic Scenario', scenarioChartOpt: 'Opt.', scenarioChartBase: 'Base', scenarioChartPess: 'Pess.', fixedRateDesc: 'Contracted fixed rate', scenarioForecast: 'Scenario {scenario} (forecast)', rateFormula: 'Euribor {eu} + {sp} = {taxa}', importBtn: '🔄 Import (BdP)', importing: 'Importing…', importNoStartDate: '⚠️ Set the loan start date in Settings before importing Euribor.', importSuccess: '✅ Imported Euribor for {date} (loan month {month}).', importError: '❌ Could not import Euribor right now. Try again later or add it manually.', importMonthNotFound: '❌ No Bank of Portugal data for that month — pick another one.', importedDesc: 'Euribor {date} (Bank of Portugal)', chartApplied: 'Applied Euribor (%)', chartAxis: 'Euribor (%)' },
+    table: { title: 'Amortization plan', legendFixed: '■ Fixed', legendHist: '■ Historical', legendToday: '■ Today', legendSc: '■ Scenario', legendPrepay: '■ Prepayment', months: 'Months', month: 'Month', date: 'Date', payment: 'Payment', interest: 'Interest', amort: 'Amort.', capital: 'Capital', euribor: 'Euribor', chipToday: 'Today', chipFixed: 'Fixed', chipHist: 'Historical', chipOpt: 'Opt.', chipBase: 'Base', chipPess: 'Pess.', exportCsv: '⬇ CSV' },
+    prepayment: { title: 'Recorded prepayments', simulator: 'Simulate early prepayment', register: 'Register prepayment', creditMonth: 'Credit month when made', amountAmortized: 'Amortized amount (€)', optionAfter: 'Option after prepayment', penaltyRate: 'Penalty rate', penaltyVar: '0.5% (variable rate)', penaltyFixed: '2% (fixed rate)', scenarioFuture: 'Future Euribor scenario', capitalAtPrepay: 'Capital at prepayment month', capitalAfterPay: 'Capital after prepayment', interestWithout: 'Interest remaining WITHOUT prepayment', interestWith: 'Interest remaining WITH prepayment', penaltyLabel: 'Penalty ({pct}% of amortized capital)', warning: '⚠️ Check contractual penalty for early prepayment — usually <strong>0.5%</strong> for variable rate or <strong>2%</strong> for fixed rate.', savings: '💰 Total interest savings', optionTerm: 'Reduce term', optionPayment: 'Reduce payment', prepayMonth: 'Month for prepayment', prepayMonthHint: 'Credit month number', prepayValue: 'Prepayment amount (€)', prepayValueHint: 'Amount to amortize', newPayment: 'New monthly payment', reductionLabel: 'Term reduction', monthsLess: '{n} months less', noHistory: 'No recorded prepayments.', historyTextTerm: 'Term reduced', historyTextPayment: 'Payment reduced', tag: 'Prepayment', optionChoice: 'Chosen option', scenarioCustom: 'Custom', customRateLabel: 'Custom Euribor rate (%)' },
     config: { title: 'Contract data', initialCapital: 'Initial capital (€)', termYears: 'Total term (years)', fixedMonths: 'Fixed months', fixedRate: 'Annual fixed rate (%)', spread: 'Spread (%)', startDate: 'Credit start date', startDateHint: 'Month and year of first payment', paymentDay: 'Payment day', paymentDayHint: 'Day of the month the payment is debited', exportImport: 'Export / Import data', exportInfo: 'Save all data (contract, Euribor history and scenarios) in a .json file. Import anytime to restore it.', export: '⬇ Export data', import: '⬆ Import data', autoSave: '💾 Auto save on browser active', clear: '🗑 Clear local data', currentMonths: 'Months elapsed today', currentMonthsHint: 'Auto-calculated if you set a start date' },
     about: { title: 'About Mortgage Calculator', text: 'A free and open-source tool to simulate and track mortgage loans. It calculates installments, total interest, future scenarios with different interest rate revisions and simulates early amortizations.', features: 'Main features:', cta: 'Contributions, suggestions and fixes are welcome! Open an issue or pull request in the repository.', feature1: 'Amortization plan simulation with fixed and variable rates', feature2: 'Interest rate revision history', feature3: 'Optimistic, base and pessimistic scenarios for forecasts', feature4: 'Early amortization simulation', feature5: 'Data autosaved in browser', source: 'Source code', sourceSub: 'Available on GitHub under MIT license', github: 'See on GitHub' },
     costs: { title: 'Additional costs', add: '+ Add cost', noCosts: 'No costs registered. Add insurance, maintenance fees or other recurring expenses.', name: 'Name', amount: 'Amount (€)', frequency: 'Frequency', monthly: 'Monthly', annual: 'Annual', oneTime: 'One-time', startMonth: 'Start month (credit)', endMonth: 'End month (optional)', desc: 'Description (optional)', summary: 'Cost summary', monthlyTotal: 'Current monthly cost', paidToDate: 'Total paid to date', projected: 'Total projected (loan life)', perMonth: '/month', fromMonth: 'Month', tag: 'Cost', noEndMonth: 'no end defined' },
-    guide: { title: 'User guide', tabs: 'What each tab does', tabResumo: '📊 Summary — loan overview: outstanding capital, current payment, interest paid and capital chart.', tabEuribor: '📈 Euribor & Scenarios — record real Euribor revisions and set three future scenarios (optimistic, base, pessimistic).', tabPlano: '📋 Plan — full month-by-month amortization table highlighting the current month.', tabAbates: '💰 Prepayments — record made prepayments and simulate the impact of future ones on total cost.', tabCustos: '🧾 Costs — record recurring expenses like life insurance, home insurance and maintenance fees.', tabConfig: '⚙️ Settings — contract data, start date, export and import.', storage: 'Where your data is stored', storageText: 'All data is stored exclusively in your browser (localStorage). Nothing is sent to any server. Clearing your browser cache or data will erase everything.', storageExport: '💡 To avoid losing data, use the Export function in Settings → Export / Import data. Save the .json file somewhere safe.', exportImport: 'Exporting and importing data', exportText: 'In Settings, click ⬇ Export data to save everything in a JSON file. To restore, click ⬆ Import data and select the file. Useful for changing browsers or making backups.', calcTitle: 'Notes on calculations', calcText: 'The plan uses the French amortization method (constant payment). In variable rate periods, the payment is recalculated based on: Euribor + spread, outstanding capital and remaining months. Future scenarios are estimates — actual rates may differ.', aboutTitle: 'About the project' },
+    refi: { title: 'Compare with switching bank', info: 'Simulate transferring the loan to another bank from a given month, with a new spread (and, optionally, a new fixed-rate period), against keeping the current loan.', switchMonth: 'Switch month', switchMonthHint: 'Loan month number', newSpread: 'New spread (%)', newFixedMonths: 'New fixed-rate months', newFixedMonthsHint: '0 to go straight to variable rate', newFixedRate: 'New annual fixed rate (%)', transferCost: 'Transfer costs (€)', transferCostHint: 'Fees, deed, registration, etc.', scenarioFuture: 'Future Euribor scenario', savings: '💰 Net savings from switching banks', interestStay: 'Remaining interest — current loan', interestSwitch: 'Remaining interest — new bank', capitalAtSwitch: 'Capital at switch', newPayment: 'New monthly payment', warning: '⚠️ Simplified estimate — does not include any contractual penalty for transferring the current loan or property appraisal costs.', worse: '⚠️ Switching banks would cost {amount} more than keeping the current loan.' },
+    guide: { title: 'User guide', tabs: 'What each tab does', tabResumo: '📊 Summary — loan overview: outstanding capital, current payment, interest paid and capital chart.', tabEuribor: '📈 Euribor & Scenarios — record real Euribor revisions and set three future scenarios (optimistic, base, pessimistic).', tabPlano: '📋 Plan — full month-by-month amortization table highlighting the current month.', tabAbates: '💰 Prepayments — record made prepayments and simulate the impact of future ones on total cost.', tabCustos: '🧾 Costs — record recurring expenses like life insurance, home insurance and maintenance fees.', tabComparador: '🏦 Comparador — simulate the impact of switching the loan to another bank from a given month.', tabConfig: '⚙️ Settings — contract data, start date, export and import.', storage: 'Where your data is stored', storageText: 'All data is stored exclusively in your browser (localStorage). Nothing is sent to any server. Clearing your browser cache or data will erase everything.', storageExport: '💡 To avoid losing data, use the Export function in Settings → Export / Import data. Save the .json file somewhere safe.', exportImport: 'Exporting and importing data', exportText: 'In Settings, click ⬇ Export data to save everything in a JSON file. To restore, click ⬆ Import data and select the file. Useful for changing browsers or making backups.', calcTitle: 'Notes on calculations', calcText: 'The plan uses the French amortization method (constant payment). In variable rate periods, the payment is recalculated based on: Euribor + spread, outstanding capital and remaining months. Future scenarios are estimates — actual rates may differ.', aboutTitle: 'About the project' },
     form: { add: 'Add', save: 'Save', cancel: 'Cancel', removeData: 'Clear local data', startMonth: 'Start month (credit month number)', euriborFuture: 'Euribor future (%)', description: 'Description (optional)' },
-    messages: { fillPrepay: 'Fill in the month and prepayment amount.', fillEuribor: 'Fill in the month and Euribor rate.', fillCost: 'Please enter at least a name and amount.', confirmClear: 'Are you sure you want to delete all locally stored data?', imported: '✅ Data imported successfully! Exported on: {date}', importedAsNew: '✅ Data imported as a new loan ("Imported loan").', importError: '❌ Error importing: {error}', restored: '✅ Data automatically restored from browser memory.', noSaved: 'ℹ️ No saved data — using defaults.', toggleLang: 'Switch language', addEuribor: 'Add Euribor revision', exportData: 'Export data to JSON file', importData: 'Import data from JSON file', clearData: 'Clear all local data' }
+    messages: { fillPrepay: 'Fill in the month and prepayment amount.', fillEuribor: 'Fill in the month and Euribor rate.', fillCost: 'Please enter at least a name and amount.', confirmClear: 'Are you sure you want to delete all locally stored data?', imported: '✅ Data imported successfully! Exported on: {date}', importedAsNew: '✅ Data imported as a new loan ("Imported loan").', importError: '❌ Error importing: {error}', restored: '✅ Data automatically restored from browser memory.', noSaved: 'ℹ️ No saved data — using defaults.', toggleLang: 'Switch language', toggleTheme: 'Switch theme', addEuribor: 'Add Euribor revision', exportData: 'Export data to JSON file', importData: 'Import data from JSON file', clearData: 'Clear all local data', undo: 'Undo', undoCusto: 'Cost "{name}" removed.', undoAbate: 'Prepayment for month {month} removed.', undoEuribor: 'Revision for month {month} removed.', errCapital: 'Initial capital must be greater than 0€.', errPrazo: 'Total term must be greater than 0 years.', errFixos: 'Fixed-rate months must be between 0 and the total loan term.', errHoje: 'Months elapsed must be between 0 and the total loan term.', backupWarnNever: 'You haven\'t exported a backup of your data yet. Save a .json file in Settings.', backupWarnSince: 'It\'s been {days} days since your last backup. Consider exporting your data in Settings.' }
   }
 };
 
 // HELPERS
-const EUR = n => n == null ? '—' : n.toLocaleString(lang === 'en' ? 'en-GB' : 'pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
-const PCT = n => n.toFixed(3) + '%';
+const EUR = n => Utils.formatCurrency(n, lang);
+const PCT = n => Utils.formatPercent(n, 3);
+
+// ── UNDO TOAST ──────────────────────────────────────────
+let _undoTimer;
+function showUndoToast(message, onUndo) {
+  const t = i18n[lang] || i18n.pt;
+  let el = document.getElementById('undo-toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'undo-toast';
+    el.className = 'undo-toast';
+    document.body.appendChild(el);
+  }
+  clearTimeout(_undoTimer);
+  el.innerHTML = `<span>${Utils.escapeHtml(message)}</span><button class="btn btn-ghost btn-sm" id="undo-toast-btn">${t.messages.undo}</button>`;
+  el.classList.add('show');
+  document.getElementById('undo-toast-btn').onclick = () => {
+    clearTimeout(_undoTimer);
+    el.classList.remove('show');
+    onUndo();
+  };
+  _undoTimer = setTimeout(() => el.classList.remove('show'), 6000);
+}
+
 function initStartDateSelects() {
   const mesEl = document.getElementById('cfg-inicio-mes');
   const anoEl = document.getElementById('cfg-inicio-ano');
@@ -88,7 +114,8 @@ function syncHojeFromStartDate() {
   if (!m || !y) { hojeEl.removeAttribute('readonly'); hojeEl.style.color = ''; return; }
   const payDay = cfgI('cfg-dia-pagamento') || 1;
   const now = new Date();
-  let months = (now.getFullYear() - y) * 12 + (now.getMonth() - (m - 1));
+  // start month itself is loan-month 1, not 0
+  let months = (now.getFullYear() - y) * 12 + (now.getMonth() - (m - 1)) + 1;
   if (now.getDate() < payDay) months--;
   if (months < 0) months = 0;
   hojeEl.value = months;
@@ -101,75 +128,15 @@ function calcMonthsElapsed() {
   recalc();
 }
 
-function getEuAt(mes, sc) {
-  const fixos = cfgI('cfg-fixos');
-  if (mes <= fixos) return null;
-  // Each historical entry covers [startMonth, startMonth+3[
-  // After the last known revision period, use scenario
-  for (let i = euriborHistory.length - 1; i >= 0; i--) {
-    const h = euriborHistory[i];
-    const fim = h.startMonth + 3;
-    if (mes >= h.startMonth && mes < fim) {
-      const rate = (h.rates && h.rates[euriborTenor]) ?? h.rate ?? 0;
-      return { rate: rate / 100, type: 'hist' };
-    }
-  }
-  const fallback = scenarioRates[sc] ? (scenarioRates[sc][euriborTenor] || 0) : 0;
-  return { rate: fallback / 100, type: sc };
-}
-
+// Active-loan wrappers around calc.js — build the loan-state object the
+// engine expects from the DOM, so app.js and the aggregate view (which
+// feeds stored loan objects straight into the same engine) share one
+// amortization implementation.
 function buildSched(sc, overridePrepayments) {
-  const C = cfg('cfg-capital'), N = cfgI('cfg-prazo') * 12, F = cfgI('cfg-fixos');
-  if (!C || !N) return [];
-  const rF = cfg('cfg-fixa') / 100 / 12, sp = cfg('cfg-spread') / 100;
-  const pmtF = rF > 0 ? C * rF / (1 - Math.pow(1 + rF, -N)) : C / N;
-  let bal = C, rows = [];
+  const loanState = captureContractData();
   const startDate = getStartDateOrFallback();
   const payDay = cfgI('cfg-dia-pagamento') || 1;
-  const prepayList = overridePrepayments !== undefined ? overridePrepayments : prepaymentsHistory;
-  // index prepayments by month for O(1) lookup
-  const prepayByMonth = {};
-  for (const p of prepayList) {
-    if (!prepayByMonth[p.month]) prepayByMonth[p.month] = [];
-    prepayByMonth[p.month].push(p);
-  }
-  // lockedPmt: when set, payment is held fixed (reduzir prazo); null = recalculate (reduzir prestação)
-  let lockedPmt = null;
-  for (let i = 1; i <= N; i++) {
-    if (bal < 0.01) break;
-    const isF = i <= F;
-    const eu = isF ? null : getEuAt(i, sc);
-    const rM = isF ? rF : (eu.rate + sp) / 12;
-    const rem = N - i + 1;
-    let pmt;
-    if (isF) {
-      pmt = pmtF;
-    } else if (lockedPmt !== null) {
-      pmt = lockedPmt;
-    } else {
-      pmt = bal > 0 ? rM * bal / (1 - Math.pow(1 + rM, -rem)) : 0;
-    }
-    const jur = bal * rM, amort = Math.min(pmt - jur, bal), nb = Math.max(bal - amort, 0);
-    const d = new Date(startDate.getFullYear(), startDate.getMonth() + i - 1, payDay);
-    rows.push({ mes: i, date: d, pmt, jur, amort, bal: nb, balS: bal, isF, euType: isF ? 'fixed' : eu.type, euTot: isF ? cfg('cfg-fixa') : (eu.rate + sp) * 100, eu: isF ? null : eu.rate * 100 });
-    bal = nb;
-    // apply prepayments after this month's normal payment
-    if (prepayByMonth[i]) {
-      for (const p of prepayByMonth[i]) {
-        const abateAmt = Math.min(p.amount, bal);
-        bal = Math.max(bal - abateAmt, 0);
-        if (p.option === 'term') {
-          // lock payment so the term shortens instead of the payment dropping
-          lockedPmt = pmt;
-        } else {
-          // reduzir prestação: recalculate from next month
-          lockedPmt = null;
-        }
-      }
-    }
-    if (bal < 0.01) break;
-  }
-  return rows;
+  return Calc.buildSchedule(loanState, sc, { overridePrepayments, startDate, payDay });
 }
 
 function renderResumo() {
@@ -307,7 +274,7 @@ function renderHist() {
     const rate = (h.rates && h.rates[euriborTenor]) ?? h.rate ?? 0;
     return `
     <div class="euribor-entry historical">
-      <div><div class="entry-period">${t.table.month} ${h.startMonth}+</div><div style="font-size:.68rem;color:var(--steel)">${h.desc || fmtM(h.startMonth)}</div></div>
+      <div><div class="entry-period">${t.table.month} ${h.startMonth}+</div><div style="font-size:.68rem;color:var(--steel)">${Utils.escapeHtml(h.desc) || fmtM(h.startMonth)}</div></div>
       <div class="entry-bar-wrap"><div class="entry-bar" style="width:${Math.min(rate / 5 * 100, 100)}%;background:var(--green2)"></div></div>
       <div class="entry-rate historical">${PCT(rate)}</div>
       <div style="display:flex;gap:4px;align-items:center">
@@ -346,14 +313,69 @@ function renderTl() {
     const badge = p.type === 'fixed' ? `<span class="chip chip-fixed">${t.table.chipFixed}</span>` : p.type === 'hist' ? `<span class="chip chip-hist">${t.table.chipHist}</span>` : `<span class="chip chip-${p.type}">${p.type === 'opt' ? t.euribor.scenarioChartOpt : p.type === 'base' ? t.euribor.scenarioChartBase : t.euribor.scenarioChartPess}</span>`;
     const taxa = p.type === 'fixed' ? PCT(p.taxa) : t.euribor.rateFormula.replace('{eu}', PCT(p.eu)).replace('{sp}', PCT(sp)).replace('{taxa}', PCT(p.taxa));
     return `<div class="euribor-entry ${p.type !== 'fixed' && p.type !== 'hist' ? 'future' : 'historical'}">
-      <div><div class="entry-period">${p.label}</div><div style="font-size:.67rem;color:var(--steel)">${p.desc || taxa}</div></div>
+      <div><div class="entry-period">${p.label}</div><div style="font-size:.67rem;color:var(--steel)">${Utils.escapeHtml(p.desc) || taxa}</div></div>
       <div class="entry-bar-wrap"><div class="entry-bar" style="width:${Math.min(p.taxa / maxT * 100, 100)}%;background:${bc}"></div></div>
       <div class="entry-rate ${rc}">${PCT(p.taxa)}</div>${badge}</div>`;
   }).join('');
+  renderEuriborChart();
+}
+
+function renderEuriborChart() {
+  const canvas = document.getElementById('euribor-chart');
+  if (!canvas) return;
+  const t = i18n[lang] || i18n.pt;
+  const rows = buildSched(tlSc);
+  const hoje = cfgI('cfg-hoje');
+  const labels = rows.map((r, i) => i + 1);
+  const euPast = rows.map((r, i) => i <= hoje - 1 ? r.eu : null);
+  const euFuture = rows.map((r, i) => i >= Math.max(hoje - 1, 0) ? r.eu : null);
+  if (euriborChartInstance) { euriborChartInstance.destroy(); euriborChartInstance = null; }
+  euriborChartInstance = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: t.euribor.chartApplied,
+        data: euPast,
+        borderColor: 'var(--green2)',
+        backgroundColor: 'rgba(39,169,106,0.1)',
+        fill: false
+      }, {
+        label: '_future_euribor',
+        data: euFuture,
+        borderColor: 'rgba(39,169,106,0.35)',
+        backgroundColor: 'transparent',
+        borderDash: [5, 4],
+        fill: false
+      }]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'nearest', intersect: false },
+      plugins: {
+        legend: {
+          display: true,
+          labels: { filter: item => !item.text.startsWith('_') }
+        },
+        tooltip: {
+          enabled: true,
+          filter: item => item.raw != null && !item.dataset.label.startsWith('_'),
+          callbacks: { label: ctx => ctx.raw != null ? ctx.dataset.label + ': ' + PCT(ctx.raw) : null }
+        }
+      },
+      elements: {
+        point: { radius: 0, hoverRadius: 6, hitRadius: 8 }
+      },
+      scales: {
+        x: { title: { display: true, text: t.summary.chartMonth } },
+        y: { title: { display: true, text: t.euribor.chartAxis } }
+      }
+    }
+  });
 }
 
 function renderTbl(reset) {
-  if (reset) tblRows = 36;
+  if (reset) tblRows = CONFIG.TABLE.INITIAL_ROWS;
   const t = i18n[lang] || i18n.pt;
   const hoje = cfgI('cfg-hoje'), rows = buildSched(tblSc);
   if (!rows.length) {
@@ -388,7 +410,7 @@ function renderTbl(reset) {
           <span style="color:var(--steel)">·</span>
           <span style="color:var(--steel)">${t.prepayment.capitalAfterPay}:</span>
           <strong style="color:var(--ink)">${EUR(runBal)}</strong>
-          ${p.desc ? `<span style="color:var(--steel);font-size:.68rem">${p.desc}</span>` : ''}
+          ${p.desc ? `<span style="color:var(--steel);font-size:.68rem">${Utils.escapeHtml(p.desc)}</span>` : ''}
         </div></td></tr>`;
       }
     }
@@ -401,84 +423,13 @@ function renderTbl(reset) {
 
 // Build schedule from a given month with a given starting balance (for abate simulation)
 function buildSchedFrom(startMonth, startBalance, sc, op, pmtRef) {
-  const N = cfgI('cfg-prazo') * 12, F = cfgI('cfg-fixos'), sp = cfg('cfg-spread') / 100;
-  const rF = cfg('cfg-fixa') / 100 / 12;
-  let bal = startBalance, rows = [];
-  for (let i = startMonth; i <= N; i++) {
-    const isF = i <= F;
-    const eu = isF ? null : getEuAt(i, sc);
-    const rM = isF ? rF : (eu.rate + sp) / 12;
-    const rem = N - i + 1;
-    let pmt;
-    if (op === 'term') {
-      // Keep original payment, shorten term
-      pmt = pmtRef > 0 ? pmtRef : (bal > 0 ? rM * bal / (1 - Math.pow(1 + rM, -rem)) : 0);
-    } else {
-      // Recalculate payment each period with remaining balance and term
-      pmt = bal > 0 ? rM * bal / (1 - Math.pow(1 + rM, -rem)) : 0;
-    }
-    const jur = bal * rM, amort = Math.min(pmt - jur, bal), nb = Math.max(bal - amort, 0);
-    rows.push({ mes: i, jur, amort, pmt, bal: nb });
-    bal = nb; if (bal < 0.01) break;
-  }
-  return rows;
-}
-
-function getEuAtForLoan(loan, mes, sc) {
-  const fixos = loan.contract.fixedMonths;
-  if (mes <= fixos) return null;
-  const hist = loan.euriborHistory || [];
-  for (let i = hist.length - 1; i >= 0; i--) {
-    const h = hist[i];
-    const fim = h.startMonth + 3;
-    if (mes >= h.startMonth && mes < fim) {
-      const rate = (h.rates && h.rates[loan.euriborTenor]) ?? h.rate ?? 0;
-      return { rate: rate / 100 };
-    }
-  }
-  const scenarios = loan.scenarios || {};
-  const scRates = sc === 'opt' ? scenarios.optimistic : sc === 'pess' ? scenarios.pessimistic : scenarios.base;
-  const fallback = scRates ? (scRates[loan.euriborTenor] || 0) : 0;
-  return { rate: fallback / 100 };
+  return Calc.buildScheduleFrom(captureContractData(), startMonth, startBalance, sc, op, pmtRef);
 }
 
 // Mirrors buildSched() but reads from a stored loan object instead of the DOM,
 // so the aggregate view can compute every loan without switching the active one.
 function buildScheduleForLoan(loan, sc) {
-  const C = loan.contract.capital, N = loan.contract.termYears * 12, F = loan.contract.fixedMonths;
-  if (!C || !N) return [];
-  const rF = loan.contract.fixedRate / 100 / 12, sp = loan.contract.spread / 100;
-  const pmtF = rF > 0 ? C * rF / (1 - Math.pow(1 + rF, -N)) : C / N;
-  let bal = C, rows = [];
-  const prepayByMonth = {};
-  for (const p of (loan.prepaymentsHistory || [])) {
-    if (!prepayByMonth[p.month]) prepayByMonth[p.month] = [];
-    prepayByMonth[p.month].push(p);
-  }
-  let lockedPmt = null;
-  for (let i = 1; i <= N; i++) {
-    if (bal < 0.01) break;
-    const isF = i <= F;
-    const eu = isF ? null : getEuAtForLoan(loan, i, sc);
-    const rM = isF ? rF : (eu.rate + sp) / 12;
-    const rem = N - i + 1;
-    let pmt;
-    if (isF) pmt = pmtF;
-    else if (lockedPmt !== null) pmt = lockedPmt;
-    else pmt = bal > 0 ? rM * bal / (1 - Math.pow(1 + rM, -rem)) : 0;
-    const jur = bal * rM, amort = Math.min(pmt - jur, bal), nb = Math.max(bal - amort, 0);
-    rows.push({ mes: i, pmt, jur, amort, bal: nb });
-    bal = nb;
-    if (prepayByMonth[i]) {
-      for (const p of prepayByMonth[i]) {
-        const abateAmt = Math.min(p.amount, bal);
-        bal = Math.max(bal - abateAmt, 0);
-        lockedPmt = p.option === 'term' ? pmt : null;
-      }
-    }
-    if (bal < 0.01) break;
-  }
-  return rows;
+  return Calc.buildSchedule(loan, sc);
 }
 
 function renderAgregado() {
@@ -499,7 +450,7 @@ function renderAgregado() {
     const restantes = Math.max(rows.length - hoje, 0);
     totalCapital += capital; totalPmt += pmtAtual; totalJurosPagos += jp;
     const isActive = loan.id === activeLoanId;
-    return `<tr class="${isActive ? 'row-today' : ''}"><td style="text-align:left;padding-left:10px">${loan.name}${isActive ? ` <span class="chip chip-today">${t.loans.activeTag}</span>` : ''}</td><td>${EUR(capital)}</td><td>${EUR(pmtAtual)}</td><td>${EUR(jp)}</td><td>${restantes} ${t.summary.monthsLabel}</td></tr>`;
+    return `<tr class="${isActive ? 'row-today' : ''}"><td style="text-align:left;padding-left:10px">${Utils.escapeHtml(loan.name)}${isActive ? ` <span class="chip chip-today">${t.loans.activeTag}</span>` : ''}</td><td>${EUR(capital)}</td><td>${EUR(pmtAtual)}</td><td>${EUR(jp)}</td><td>${restantes} ${t.summary.monthsLabel}</td></tr>`;
   }).join('');
   el.innerHTML = `<div class="tbl-wrap"><table><thead><tr>
     <th style="text-align:left;padding-left:10px">${t.aggregate.loan}</th>
@@ -537,11 +488,25 @@ function renderAggregateChart() {
   });
 }
 
+function withCustomFallbackRate(loanState, ratePct) {
+  return { ...loanState, scenarios: { ...loanState.scenarios, base: { ...(loanState.scenarios.base || {}), [loanState.euriborTenor]: ratePct } } };
+}
+
 function calcAbate() {
   const mesSim = parseInt(document.getElementById('ab-mes').value) || cfgI('cfg-hoje');
   const abate = parseFloat(document.getElementById('ab-val').value) || 0;
-  const op = document.getElementById('ab-op').value, sc = document.getElementById('ab-sc').value;
-  const rows = buildSched(sc);
+  const op = document.getElementById('ab-op').value;
+  const scSelect = document.getElementById('ab-sc').value;
+  const isCustom = scSelect === 'custom';
+  const sc = isCustom ? 'base' : scSelect;
+  let loanState = captureContractData();
+  if (isCustom) {
+    const customRate = parseFloat(document.getElementById('ab-sc-custom')?.value) || 0;
+    loanState = withCustomFallbackRate(loanState, customRate);
+  }
+  const startDate = getStartDateOrFallback();
+  const payDay = cfgI('cfg-dia-pagamento') || 1;
+  const rows = Calc.buildSchedule(loanState, sc, { startDate, payDay });
   const rowAntes = rows[mesSim - 1];
   if (!rowAntes) { document.getElementById('ab-result').style.display = 'none'; return; }
 
@@ -555,13 +520,13 @@ function calcAbate() {
   // Juros restantes COM abate — rebuild schedule from mesSim+1 with reduced capital
   // For "reduzir prazo": keep same payment as without abate
   const pmtRef = rows[mesSim] ? rows[mesSim].pmt : 0;
-  const rowsCom = buildSchedFrom(mesSim + 1, capApos, sc, op, pmtRef);
+  const rowsCom = Calc.buildScheduleFrom(loanState, mesSim + 1, capApos, sc, op, pmtRef);
   let jCom = 0; for (const r of rowsCom) jCom += r.jur;
 
   const mesesSem = rows.length - mesSim;
   const mesesCom = rowsCom.length;
   const poupar = jSem - jCom;
-  const penalPct = parseFloat(document.getElementById('ab-penal-rate')?.value || '0.5') / 100;
+  const penalPct = parseFloat(document.getElementById('ab-penal-rate')?.value || (CONFIG.PREPAYMENT_PENALTY.VARIABLE_RATE * 100)) / 100;
   const penal = abate * penalPct;
 
   // New payment (reduzir prestação) or months saved (reduzir prazo)
@@ -587,6 +552,58 @@ function calcAbate() {
   }
 }
 
+function calcComparador() {
+  const t = i18n[lang] || i18n.pt;
+  const mesSim = parseInt(document.getElementById('refi-mes').value) || cfgI('cfg-hoje');
+  const newSpread = parseFloat(document.getElementById('refi-spread').value) || 0;
+  const newFixedMonths = parseInt(document.getElementById('refi-fixos').value) || 0;
+  const newFixedRate = parseFloat(document.getElementById('refi-fixa').value) || 0;
+  const transferCost = parseFloat(document.getElementById('refi-custo').value) || 0;
+  const sc = document.getElementById('refi-sc').value;
+
+  const loanState = captureContractData();
+  const startDate = getStartDateOrFallback();
+  const payDay = cfgI('cfg-dia-pagamento') || 1;
+  const rowsAtual = Calc.buildSchedule(loanState, sc, { startDate, payDay });
+  const rowAntes = rowsAtual[mesSim - 1];
+  if (!rowAntes) { document.getElementById('refi-result').style.display = 'none'; return; }
+
+  const capital = rowAntes.bal;
+  let jurAtual = 0;
+  for (let i = mesSim; i < rowsAtual.length; i++) jurAtual += rowsAtual[i].jur;
+
+  const remainingMonths = rowsAtual.length - mesSim;
+  const newLoanState = {
+    contract: { capital, termYears: remainingMonths / 12, fixedMonths: newFixedMonths, fixedRate: newFixedRate, spread: newSpread },
+    euriborTenor: loanState.euriborTenor,
+    euriborHistory: [],
+    prepaymentsHistory: [],
+    scenarios: loanState.scenarios
+  };
+  const rowsNovo = Calc.buildSchedule(newLoanState, sc);
+  let jurNovo = 0;
+  for (const r of rowsNovo) jurNovo += r.jur;
+
+  const poupanca = jurAtual - (jurNovo + transferCost);
+
+  document.getElementById('refi-result').style.display = 'block';
+  document.getElementById('refi-jur-atual').textContent = EUR(jurAtual);
+  document.getElementById('refi-jur-novo').textContent = EUR(jurNovo);
+  document.getElementById('refi-capital').textContent = EUR(capital);
+  document.getElementById('refi-pmt').textContent = rowsNovo[0] ? EUR(rowsNovo[0].pmt) : '—';
+  document.getElementById('refi-poupar').textContent = EUR(Math.abs(poupanca));
+
+  const banner = document.getElementById('refi-banner');
+  const sub = banner.querySelector('.sub');
+  if (poupanca >= 0) {
+    banner.style.background = '';
+    sub.textContent = t.refi.savings;
+  } else {
+    banner.style.background = 'linear-gradient(135deg, var(--red), #4a1a1a)';
+    sub.textContent = t.refi.worse.replace('{amount}', EUR(Math.abs(poupanca)));
+  }
+}
+
 function calcPrepayImpact(i, sc) {
   const p = prepaymentsHistory[i];
   const hoje = cfgI('cfg-hoje');
@@ -607,6 +624,12 @@ function calcPrepayImpact(i, sc) {
   const monthsSaved = rowsWithout.length - rowsWith.length;
   const newPayment = p.option === 'payment' && rowsWith[p.month] ? rowsWith[p.month].pmt : null;
   return { capitalBefore, capitalAfter, savedReal: Math.max(savedReal, 0), savedFuture: Math.max(savedFuture, 0), penalty, monthsSaved, newPayment };
+}
+
+function onAbScChange() {
+  const row = document.getElementById('ab-sc-custom-row');
+  if (row) row.style.display = document.getElementById('ab-sc').value === 'custom' ? 'flex' : 'none';
+  calcAbate();
 }
 
 function setAbatesImpactSc(sc, el) {
@@ -633,7 +656,7 @@ function renderAbatesHist() {
     return `
     <div style="margin-bottom:10px;border-radius:8px;overflow:hidden;border:1px solid var(--border)">
       <div class="euribor-entry historical" style="border-radius:0;margin-bottom:0;border:none;border-left:3px solid var(--green2);border-bottom:1px solid var(--border)">
-        <div><div class="entry-period">${t.table.month} ${a.month}</div><div style="font-size:.68rem;color:var(--steel)">${a.desc || fmtM(a.month)} · ${a.option === 'term' ? t.prepayment.historyTextTerm : t.prepayment.historyTextPayment}${a.penalRate != null ? ' · pen. ' + a.penalRate + '%' : ''}</div></div>
+        <div><div class="entry-period">${t.table.month} ${a.month}</div><div style="font-size:.68rem;color:var(--steel)">${Utils.escapeHtml(a.desc) || fmtM(a.month)} · ${a.option === 'term' ? t.prepayment.historyTextTerm : t.prepayment.historyTextPayment}${a.penalRate != null ? ' · pen. ' + a.penalRate + '%' : ''}</div></div>
         <div class="entry-bar-wrap"><div class="entry-bar" style="width:${Math.min(a.amount / 50000 * 100, 100)}%;background:var(--gold)"></div></div>
         <div class="entry-rate" style="color:var(--amber)">${EUR(a.amount)}${a.penalRate ? `<div style="font-size:.6rem;color:var(--red2);text-align:right">pen. ${EUR(imp.penalty)}</div>` : ''}</div>
         <div style="display:flex;gap:4px;align-items:center">
@@ -644,7 +667,7 @@ function renderAbatesHist() {
       <div style="background:var(--fog);padding:8px 14px 10px;border-top:none">
         <div style="font-size:.65rem;font-weight:600;color:var(--steel);text-transform:uppercase;letter-spacing:.04em;margin-bottom:7px">${isPt ? 'Impacto do abate' : 'Prepayment impact'}</div>
         <div style="font-size:.74rem;display:grid;grid-template-columns:repeat(3,1fr);gap:5px 16px">
-          <div style="color:var(--steel)">${isPt ? 'Capital' : 'Capital'}: <strong style="color:var(--ink)">${EUR(imp.capitalBefore)} → ${EUR(imp.capitalAfter)}</strong></div>
+          <div style="color:var(--steel)">${isPt ? 'Capital' : 'Capital'}: <strong style="color:var(--text)">${EUR(imp.capitalBefore)} → ${EUR(imp.capitalAfter)}</strong></div>
           <div style="color:var(--steel)">${isPt ? 'Poupança bruta' : 'Gross savings'}: <strong style="color:var(--green2)">${EUR(totalSaved)}</strong></div>
           <div style="color:var(--steel)">${isPt ? 'Poupança líquida' : 'Net savings'}: <strong style="color:var(--green2)">${EUR(net)}</strong></div>
           <div style="color:var(--steel)">${isPt ? `Real (até mês ${hoje})` : `Actual (to month ${hoje})`}: <strong style="color:var(--mid)">${EUR(imp.savedReal)}</strong></div>
@@ -677,7 +700,7 @@ function renderCustos() {
     const endStr = c.frequency === 'oneTime' ? '' : c.endMonth ? ` → ${t.costs.fromMonth} ${c.endMonth}` : ` (${t.costs.noEndMonth})`;
     const dateStr = c.frequency === 'oneTime' ? `${t.costs.fromMonth} ${c.startMonth}` : `${t.costs.fromMonth} ${c.startMonth}${endStr}`;
     return `<div class="euribor-entry historical" style="border-left-color:var(--amber)">
-      <div><div class="entry-period">${c.name}</div><div style="font-size:.68rem;color:var(--steel)">${dateStr} · ${freqLabel}</div></div>
+      <div><div class="entry-period">${Utils.escapeHtml(c.name)}</div><div style="font-size:.68rem;color:var(--steel)">${dateStr} · ${freqLabel}</div></div>
       <div class="entry-bar-wrap"><div class="entry-bar" style="width:${barWidth}%;background:var(--amber)"></div></div>
       <div class="entry-rate" style="color:var(--amber);white-space:nowrap">${displayValue}${displayUnit}</div>
       <div style="display:flex;gap:4px;align-items:center">
@@ -735,14 +758,22 @@ function addCusto() {
   recalc();
 }
 
-function removeCusto(i) { extraCosts.splice(i, 1); recalc(); }
+function removeCusto(i) {
+  const t = i18n[lang] || i18n.pt;
+  const [removed] = extraCosts.splice(i, 1);
+  recalc();
+  showUndoToast(t.messages.undoCusto.replace('{name}', removed.name), () => {
+    extraCosts.splice(i, 0, removed);
+    recalc();
+  });
+}
 function toggleCustosForm() { const el = document.getElementById('custos-form'); if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none'; }
 
 function addAbateHist() {
   const mes = parseInt(document.getElementById('ab-hist-mes').value);
   const val = parseFloat(document.getElementById('ab-hist-val').value);
   const option = document.getElementById('ab-hist-op').value;
-  const penalRate = parseFloat(document.getElementById('ab-hist-penal')?.value ?? '0.5') || 0;
+  const penalRate = parseFloat(document.getElementById('ab-hist-penal')?.value ?? (CONFIG.PREPAYMENT_PENALTY.VARIABLE_RATE * 100)) || 0;
   const desc = document.getElementById('ab-hist-desc').value.trim();
   const t = i18n[lang] || i18n.pt;
   const errEl = document.getElementById('ab-hist-error');
@@ -752,14 +783,71 @@ function addAbateHist() {
   prepaymentsHistory.sort((a, b) => a.month - b.month);
   document.getElementById('ab-hist-mes').value = '';
   document.getElementById('ab-hist-val').value = '';
-  const penalEl = document.getElementById('ab-hist-penal'); if (penalEl) penalEl.value = '0.5';
+  const penalEl = document.getElementById('ab-hist-penal'); if (penalEl) penalEl.value = CONFIG.PREPAYMENT_PENALTY.VARIABLE_RATE * 100;
   document.getElementById('ab-hist-desc').value = '';
   toggleAbateForm();
   recalc();
 }
 
-function removeAbate(i) { prepaymentsHistory.splice(i, 1); recalc(); }
+function removeAbate(i) {
+  const t = i18n[lang] || i18n.pt;
+  const [removed] = prepaymentsHistory.splice(i, 1);
+  recalc();
+  showUndoToast(t.messages.undoAbate.replace('{month}', removed.month), () => {
+    prepaymentsHistory.push(removed);
+    prepaymentsHistory.sort((a, b) => a.month - b.month);
+    recalc();
+  });
+}
 function toggleAbateForm() { const el = document.getElementById('abate-form'); el.style.display = el.style.display === 'none' ? 'block' : 'none'; }
+
+const BDP_EURIBOR_URL = 'https://bpstat.bportugal.pt/data/v1/domains/22/datasets/2829cb9155cb4f6ba6906db6b204c4bc/?lang=PT&series_ids=13168436,13168438,13168437&decimal=true';
+
+async function importarEuriborBdP() {
+  const t = i18n[lang] || i18n.pt;
+  const btn = document.getElementById('btn-import-euribor');
+  const msgEl = document.getElementById('euribor-import-msg');
+  const showMsg = (cls, text) => { if (msgEl) { msgEl.className = cls; msgEl.textContent = text; msgEl.style.display = 'block'; } };
+
+  if (!hasStartDate()) { showMsg('warn', t.euribor.importNoStartDate); return; }
+
+  const startDate = getStartDate();
+  const originalLabel = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = t.euribor.importing; }
+  if (msgEl) msgEl.style.display = 'none';
+
+  try {
+    const res = await fetch(BDP_EURIBOR_URL);
+    if (!res.ok) throw new Error('http-' + res.status);
+    const data = await res.json();
+    const dates = data.dimension.reference_date.category.index;
+    const n = dates.length;
+    const values = data.value;
+    const monthInput = document.getElementById('euribor-import-month');
+    const requestedYM = monthInput ? monthInput.value : '';
+    const idx = requestedYM ? dates.findIndex(d => d.startsWith(requestedYM)) : n - 1;
+    if (idx === -1) throw new Error('month-not-found');
+    const r3 = Math.round(values[idx] * 1000) / 1000;
+    const r6 = Math.round(values[n + idx] * 1000) / 1000;
+    const r12 = Math.round(values[2 * n + idx] * 1000) / 1000;
+    const [Y, M] = dates[idx].split('-').map(Number);
+
+    const y = startDate.getFullYear(), m = startDate.getMonth() + 1;
+    const loanMonth = (Y - y) * 12 + (M - m) + 1;
+    if (loanMonth < 1) throw new Error('before-start');
+
+    const dateLabel = String(M).padStart(2, '0') + '/' + Y;
+    euriborHistory = euriborHistory.filter(h => h.startMonth !== loanMonth);
+    euriborHistory.push({ startMonth: loanMonth, rates: { 3: r3, 6: r6, 12: r12 }, desc: t.euribor.importedDesc.replace('{date}', dateLabel) });
+    euriborHistory.sort((a, b) => a.startMonth - b.startMonth);
+    recalc();
+    showMsg('info', t.euribor.importSuccess.replace('{month}', loanMonth).replace('{date}', dateLabel));
+  } catch (err) {
+    showMsg('warn', err.message === 'month-not-found' ? t.euribor.importMonthNotFound : t.euribor.importError);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = originalLabel; }
+  }
+}
 
 function addHist() {
   const mes = parseInt(document.getElementById('ah-mes').value);
@@ -780,8 +868,44 @@ function addHist() {
   toggleForm(); recalc();
 }
 
-function removeHist(i) { euriborHistory.splice(i, 1); recalc(); }
+function removeHist(i) {
+  const t = i18n[lang] || i18n.pt;
+  const [removed] = euriborHistory.splice(i, 1);
+  recalc();
+  showUndoToast(t.messages.undoEuribor.replace('{month}', removed.startMonth), () => {
+    euriborHistory.push(removed);
+    euriborHistory.sort((a, b) => a.startMonth - b.startMonth);
+    recalc();
+  });
+}
 function toggleForm() { const el = document.getElementById('add-form'); if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none'; }
+
+function currentTheme() {
+  const stored = localStorage.getItem('theme');
+  if (stored) return stored;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function updateThemeToggleIcon() {
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = currentTheme() === 'dark' ? '☀️' : '🌙';
+}
+
+function toggleTheme() {
+  const next = currentTheme() === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('theme', next);
+  document.documentElement.dataset.theme = next;
+  updateThemeToggleIcon();
+}
+
+function initTheme() {
+  const stored = localStorage.getItem('theme');
+  if (stored) document.documentElement.dataset.theme = stored;
+  updateThemeToggleIcon();
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (!localStorage.getItem('theme')) updateThemeToggleIcon();
+  });
+}
 
 function toggleLang() {
   lang = lang === 'pt' ? 'en' : 'pt';
@@ -817,6 +941,7 @@ function updateLang() {
     if (el && value) el.setAttribute(attr, value);
   };
   setAttr('lang-toggle', 'aria-label', msg.toggleLang);
+  setAttr('theme-toggle', 'aria-label', msg.toggleTheme);
   setAttr('btn-add-euribor', 'aria-label', msg.addEuribor);
   setAttr('loan-select', 'aria-label', t.loans.label);
   setAttr('btn-loan-rename', 'aria-label', t.loans.renameTitle);
@@ -849,7 +974,7 @@ function setEuriborTenor(tenor, el) {
 
 function setTlSc(sc, el) { tlSc = sc; document.querySelectorAll('#panel-euribor .card:last-child .scenario-tab').forEach(t => t.classList.remove('active')); el.classList.add('active'); renderTl(); }
 function setTblSc(sc, el) { tblSc = sc; document.querySelectorAll('#panel-tabela .scenario-tab').forEach(t => t.classList.remove('active')); el.classList.add('active'); renderTbl(true); }
-function loadMore() { tblRows += 60; renderTbl(false); }
+function loadMore() { tblRows += CONFIG.TABLE.PAGE_SIZE; renderTbl(false); }
 
 function showTab(id, el) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
@@ -858,12 +983,14 @@ function showTab(id, el) {
   if (id === 'tabela') renderTbl(true);
   if (id === 'abates') calcAbate();
   if (id === 'agregado') renderAgregado();
+  if (id === 'comparador') calcComparador();
 }
 
 function exportarDados() {
   syncActiveLoanIntoArray();
   const dados = {
     version: 2,
+    appVersion: CONFIG.APP_VERSION,
     exportedAt: new Date().toISOString(),
     activeLoanId,
     loans
@@ -873,6 +1000,33 @@ function exportarDados() {
   a.href = URL.createObjectURL(blob);
   a.download = 'credito_habitacao_' + new Date().toISOString().slice(0, 10) + '.json';
   a.click(); URL.revokeObjectURL(a.href);
+  markBackupDone();
+}
+
+function exportarPlanoCSV() {
+  const t = i18n[lang] || i18n.pt;
+  const rows = buildSched(tblSc);
+  const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
+  const header = [t.table.month, t.table.date, t.table.payment, t.table.interest, t.table.amort, t.table.capital, t.table.euribor].join(',');
+  const lines = rows.map(r => {
+    const eu = r.isF ? cfg('cfg-fixa') : r.eu;
+    return [
+      r.mes,
+      r.date.toLocaleDateString(locale, { month: 'short', year: 'numeric' }),
+      r.pmt.toFixed(2),
+      r.jur.toFixed(2),
+      r.amort.toFixed(2),
+      r.bal.toFixed(2),
+      eu != null ? eu.toFixed(3) : ''
+    ].join(',');
+  });
+  const csv = '﻿' + [header, ...lines].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'plano_amortizacao_' + new Date().toISOString().slice(0, 10) + '.csv';
+  a.click(); URL.revokeObjectURL(a.href);
+  markBackupDone();
 }
 
 function applyStateData(d) {
@@ -948,7 +1102,7 @@ function importarDados(e) {
 }
 
 // ── LOANS (multi-crédito) ──────────────────────────────
-function genId() { return 'loan_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+function genId() { return 'loan_' + Date.now().toString(36) + Utils.generateId(); }
 
 function captureContractData() {
   return {
@@ -998,7 +1152,7 @@ function syncEuriborTenorButtons() {
 }
 
 function resetScenarioTabs() {
-  tlSc = 'base'; tblSc = 'base'; abatesImpactSc = 'base'; tblRows = 36;
+  tlSc = 'base'; tblSc = 'base'; abatesImpactSc = 'base'; tblRows = CONFIG.TABLE.INITIAL_ROWS;
   ['#panel-euribor .card:last-child', '#panel-tabela', '#abates-impact-sc'].forEach(sel => {
     document.querySelectorAll(sel + ' .scenario-tab').forEach(t => t.classList.remove('active'));
     const baseBtn = document.querySelector(sel + ' .scenario-tab.sc-base');
@@ -1086,7 +1240,7 @@ function deleteLoan() {
 }
 
 // ── LOCAL STORAGE ──────────────────────────────────────
-const LS_KEY = 'mortgage_tracker_v1';
+const LS_KEY = CONFIG.LS_KEY;
 
 function updateScenarioInputs() {
   document.getElementById('sc-opt').value = scenarioRates.opt[euriborTenor];
@@ -1134,7 +1288,52 @@ function clearStorage() {
   const t = i18n[lang] || i18n.pt;
   if (!confirm(t.messages.confirmClear)) return;
   localStorage.removeItem(LS_KEY);
+  localStorage.removeItem(LAST_EXPORT_KEY);
   location.reload();
+}
+
+// ── BACKUP WARNING ──────────────────────────────────────
+const LAST_EXPORT_KEY = LS_KEY + '_lastExport';
+const BACKUP_WARN_DAYS = 90;
+
+function markBackupDone() {
+  localStorage.setItem(LAST_EXPORT_KEY, new Date().toISOString());
+  renderBackupWarning();
+}
+
+function renderBackupWarning() {
+  const el = document.getElementById('backup-warn');
+  if (!el) return;
+  const t = i18n[lang] || i18n.pt;
+  const raw = localStorage.getItem(LAST_EXPORT_KEY);
+  const lastExport = raw ? new Date(raw) : null;
+  const daysSince = lastExport ? (Date.now() - lastExport.getTime()) / 86400000 : Infinity;
+  if (daysSince <= BACKUP_WARN_DAYS) { el.style.display = 'none'; return; }
+  const msg = lastExport
+    ? t.messages.backupWarnSince.replace('{days}', Math.floor(daysSince))
+    : t.messages.backupWarnNever;
+  el.textContent = '💡 ' + msg;
+  el.style.display = 'block';
+}
+
+// ── VALIDATION ──────────────────────────────────────────
+function validateContract() {
+  const el = document.getElementById('cfg-error');
+  if (!el) return true;
+  const t = i18n[lang] || i18n.pt;
+  const capital = cfg('cfg-capital'), prazo = cfgI('cfg-prazo'), fixos = cfgI('cfg-fixos'), hoje = cfgI('cfg-hoje');
+  const errors = [];
+  if (!(capital > 0)) errors.push(t.messages.errCapital);
+  if (!(prazo > 0)) errors.push(t.messages.errPrazo);
+  if (fixos < 0 || fixos > prazo * 12) errors.push(t.messages.errFixos);
+  if (hoje < 0 || hoje > prazo * 12) errors.push(t.messages.errHoje);
+  if (errors.length) {
+    el.innerHTML = errors.map(e => `⚠️ ${e}`).join('<br>');
+    el.style.display = 'block';
+  } else {
+    el.style.display = 'none';
+  }
+  return errors.length === 0;
 }
 
 // ── RECALC (saves to storage on every change) ──────────
@@ -1142,19 +1341,26 @@ let _recalcTimer;
 function recalcDebounced() { clearTimeout(_recalcTimer); _recalcTimer = setTimeout(recalc, 250); }
 function recalc() {
   try {
+    validateContract();
     renderResumo();
     renderHist();
     renderTl();
     renderAbatesHist();
     calcAbate();
     renderCustos();
+    renderBackupWarning();
     if (document.getElementById('panel-tabela').classList.contains('active')) renderTbl(true);
     if (document.getElementById('panel-agregado').classList.contains('active')) renderAgregado();
   } catch (e) { console.error('recalc render error:', e); }
   finally { saveToStorage(); }
 }
 
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
 // ── INIT ────────────────────────────────────────────────
+initTheme();
 initStartDateSelects();
 const savedLang = localStorage.getItem('lang') || 'pt';
 lang = savedLang;
@@ -1175,6 +1381,7 @@ updateLang();
 renderLoanSelector();
 recalc();
 document.getElementById('ab-mes').value = document.getElementById('cfg-hoje').value;
+document.getElementById('refi-mes').value = document.getElementById('cfg-hoje').value;
 renderCustos();
 
 // Show storage status in config panel

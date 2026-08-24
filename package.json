@@ -1,0 +1,7 @@
+{
+  "name": "credito-habitacao",
+  "private": true,
+  "scripts": {
+    "test": "node --test"
+  }
+}

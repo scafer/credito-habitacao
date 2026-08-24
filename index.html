@@ -7,6 +7,9 @@
   <title>Crédito Habitação</title>
   <link rel="icon" type="image/svg+xml"
     href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="theme-color" content="#0e1a2b">
   <link
     href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,300&family=DM+Sans:wght@300;400;500;600&display=swap"
     rel="stylesheet">
@@ -25,6 +28,8 @@
         </div>
       </div>
       <div style="display:flex;gap:8px">
+        <button id="theme-toggle" class="btn btn-ghost btn-sm" onclick="toggleTheme()"
+          aria-label="Mudar tema">🌙</button>
         <button id="lang-toggle" class="btn btn-ghost btn-sm" onclick="toggleLang()"
           aria-label="Mudar idioma">PT</button>
       </div>
@@ -60,6 +65,8 @@
         data-i18n="tabs.abates">Abates</div>
       <div class="tab" onclick="showTab('custos',this)" role="tab" aria-selected="false" id="tab-custos"
         data-i18n="tabs.custos">Custos</div>
+      <div class="tab" onclick="showTab('comparador',this)" role="tab" aria-selected="false" id="tab-comparador"
+        data-i18n="tabs.comparador">Comparador</div>
       <div class="tab" onclick="showTab('config',this)" role="tab" aria-selected="false" id="tab-config"
         data-i18n="tabs.config">Configuração</div>
       <div class="tab" onclick="showTab('ajuda',this)" role="tab" aria-selected="false" id="tab-ajuda"
@@ -180,9 +187,17 @@
         <div class="card-head">
           <div class="card-title"><span class="dot"></span><span data-i18n="euribor.history">Histórico de revisões
               (real)</span></div>
-          <button id="btn-add-euribor" class="btn btn-primary btn-sm" onclick="toggleForm()"
-            aria-label="Adicionar revisão Euribor" data-i18n="form.add">+ Adicionar</button>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <input type="month" id="euribor-import-month" aria-label="Mês a importar" title="Mês a importar (vazio = mais recente disponível)"
+              style="width:148px;border:1.5px solid var(--mist);border-radius:8px;padding:8px 10px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;color:var(--mid);background:var(--fog)">
+            <button id="btn-import-euribor" class="btn btn-ghost btn-sm" onclick="importarEuriborBdP()"
+              aria-label="Importar Euribor do Banco de Portugal" data-i18n="euribor.importBtn">🔄 Importar
+              (BdP)</button>
+            <button id="btn-add-euribor" class="btn btn-primary btn-sm" onclick="toggleForm()"
+              aria-label="Adicionar revisão Euribor" data-i18n="form.add">+ Adicionar</button>
+          </div>
         </div>
+        <div id="euribor-import-msg" style="display:none;margin-bottom:10px"></div>
         <div style="margin:10px 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           <span style="font-size:.75rem;color:var(--steel)" data-i18n="euribor.tenor">Euribor tenor:</span>
           <button class="btn btn-sm euribor-tenor-btn active" data-tenor="3" onclick="setEuriborTenor(3,this)"
@@ -261,6 +276,7 @@
               data-i18n="euribor.scenarioChartPess">Pess.</div>
           </div>
         </div>
+        <canvas id="euribor-chart" width="400" height="160" style="margin-bottom:16px"></canvas>
         <div id="tl-list"></div>
       </div>
     </div>
@@ -276,15 +292,19 @@
             <span id="tbl-sc-legend" style="color:#15803d" data-i18n="table.legendSc">■ Cenário</span>
             <span style="color:#065f46" data-i18n="table.legendPrepay">■ Abate</span>
           </div>
-          <div style="display:flex;gap:4px">
-            <div class="scenario-tab sc-opt" style="flex:none;padding:5px 12px;font-size:.72rem"
-              onclick="setTblSc('opt',this)" aria-label="Cenário Optimista" data-i18n="euribor.scenarioOpt">Optimista
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <div style="display:flex;gap:4px">
+              <div class="scenario-tab sc-opt" style="flex:none;padding:5px 12px;font-size:.72rem"
+                onclick="setTblSc('opt',this)" aria-label="Cenário Optimista" data-i18n="euribor.scenarioOpt">Optimista
+              </div>
+              <div class="scenario-tab sc-base active" style="flex:none;padding:5px 12px;font-size:.72rem"
+                onclick="setTblSc('base',this)" aria-label="Cenário Base" data-i18n="euribor.scenarioBase">Base</div>
+              <div class="scenario-tab sc-pess" style="flex:none;padding:5px 12px;font-size:.72rem"
+                onclick="setTblSc('pess',this)" aria-label="Cenário Pessimista" data-i18n="euribor.scenarioPess">
+                Pessimista</div>
             </div>
-            <div class="scenario-tab sc-base active" style="flex:none;padding:5px 12px;font-size:.72rem"
-              onclick="setTblSc('base',this)" aria-label="Cenário Base" data-i18n="euribor.scenarioBase">Base</div>
-            <div class="scenario-tab sc-pess" style="flex:none;padding:5px 12px;font-size:.72rem"
-              onclick="setTblSc('pess',this)" aria-label="Cenário Pessimista" data-i18n="euribor.scenarioPess">
-              Pessimista</div>
+            <button class="btn btn-ghost btn-sm" onclick="exportarPlanoCSV()" aria-label="Exportar plano para CSV"
+              data-i18n="table.exportCsv">⬇ CSV</button>
           </div>
         </div>
       </div>
@@ -386,11 +406,17 @@
         </div>
         <div class="field-row">
           <div class="field-label" data-i18n="prepayment.scenarioFuture">Cenário Euribor futura</div>
-          <select id="ab-sc" onchange="calcAbate()">
+          <select id="ab-sc" onchange="onAbScChange()">
             <option value="opt" data-i18n="euribor.scenarioOpt">Optimista</option>
             <option value="base" selected data-i18n="euribor.scenarioBase">Base</option>
             <option value="pess" data-i18n="euribor.scenarioPess">Pessimista</option>
+            <option value="custom" data-i18n="prepayment.scenarioCustom">Personalizado</option>
           </select>
+        </div>
+        <div class="field-row" id="ab-sc-custom-row" style="display:none">
+          <div class="field-label" data-i18n="prepayment.customRateLabel">Taxa Euribor personalizada (%)</div>
+          <input type="number" id="ab-sc-custom" value="3.00" step="0.01" min="0" oninput="calcAbate()"
+            style="width:148px">
         </div>
       </div>
 
@@ -487,6 +513,82 @@
       </div>
     </div>
 
+    <!-- COMPARADOR -->
+    <div class="panel" id="panel-comparador">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px"><span class="dot"></span><span
+            data-i18n="refi.title">Comparar com trocar de banco</span></div>
+        <p style="font-size:.78rem;color:var(--steel);margin-bottom:16px" data-i18n="refi.info">Simula transferir o
+          crédito para outro banco a partir de um determinado mês, com um novo spread (e, opcionalmente, um novo
+          período de taxa fixa), face a manter o crédito actual.</p>
+        <div class="field-row">
+          <div class="field-label"><span data-i18n="refi.switchMonth">Mês da troca</span>
+            <div class="field-hint" data-i18n="refi.switchMonthHint">Nº do mês do crédito</div>
+          </div>
+          <input type="number" id="refi-mes" min="1" oninput="calcComparador()" style="width:148px">
+        </div>
+        <div class="field-row">
+          <div class="field-label" data-i18n="refi.newSpread">Novo spread (%)</div>
+          <input type="number" id="refi-spread" value="0.60" min="0" max="5" step="0.01" oninput="calcComparador()"
+            style="width:148px">
+        </div>
+        <div class="field-row">
+          <div class="field-label"><span data-i18n="refi.newFixedMonths">Novos meses de taxa fixa</span>
+            <div class="field-hint" data-i18n="refi.newFixedMonthsHint">0 se ficar logo em taxa variável</div>
+          </div>
+          <input type="number" id="refi-fixos" value="0" min="0" oninput="calcComparador()" style="width:148px">
+        </div>
+        <div class="field-row">
+          <div class="field-label" data-i18n="refi.newFixedRate">Nova taxa fixa anual (%)</div>
+          <input type="number" id="refi-fixa" value="3.00" min="0" max="20" step="0.01" oninput="calcComparador()"
+            style="width:148px">
+        </div>
+        <div class="field-row">
+          <div class="field-label"><span data-i18n="refi.transferCost">Custos de transferência (€)</span>
+            <div class="field-hint" data-i18n="refi.transferCostHint">Comissões, escritura, registo, etc.</div>
+          </div>
+          <input type="number" id="refi-custo" value="1000" min="0" step="50" oninput="calcComparador()"
+            style="width:148px">
+        </div>
+        <div class="field-row">
+          <div class="field-label" data-i18n="refi.scenarioFuture">Cenário Euribor futura</div>
+          <select id="refi-sc" onchange="calcComparador()">
+            <option value="opt" data-i18n="euribor.scenarioOpt">Optimista</option>
+            <option value="base" selected data-i18n="euribor.scenarioBase">Base</option>
+            <option value="pess" data-i18n="euribor.scenarioPess">Pessimista</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="refi-result" style="display:none">
+        <div class="result-banner" id="refi-banner">
+          <div class="big" id="refi-poupar">—</div>
+          <div class="sub" data-i18n="refi.savings">💰 Poupança líquida ao trocar de banco</div>
+        </div>
+        <div class="stat-grid" style="margin-bottom:10px">
+          <div class="stat">
+            <div class="stat-label" data-i18n="refi.interestStay">Juros restantes — crédito actual</div>
+            <div class="stat-val" id="refi-jur-atual">—</div>
+          </div>
+          <div class="stat accent">
+            <div class="stat-label" data-i18n="refi.interestSwitch">Juros restantes — banco novo</div>
+            <div class="stat-val" id="refi-jur-novo">—</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label" data-i18n="refi.capitalAtSwitch">Capital na troca</div>
+            <div class="stat-val" id="refi-capital">—</div>
+          </div>
+          <div class="stat gold">
+            <div class="stat-label" data-i18n="refi.newPayment">Nova prestação mensal</div>
+            <div class="stat-val" id="refi-pmt">—</div>
+          </div>
+        </div>
+        <div class="warn" style="margin-top:10px" data-i18n="refi.warning">⚠️ Estimativa simplificada — não inclui
+          eventuais penalizações contratuais por transferência no crédito actual nem custos de avaliação do imóvel.
+        </div>
+      </div>
+    </div>
+
     <!-- CONFIG -->
     <div class="panel" id="panel-config">
       <div class="card">
@@ -532,6 +634,7 @@
               de início</div>
           </div><input type="number" id="cfg-hoje" value="12" min="0" required oninput="recalc()">
         </div>
+        <div id="cfg-error" style="display:none;margin-top:8px;padding:6px 10px;border-radius:6px;background:#fef2f2;color:#dc2626;font-size:.78rem"></div>
       </div>
       <div class="card">
         <div class="card-title" style="margin-bottom:4px"><span class="dot"></span><span
@@ -540,6 +643,7 @@
           dados (contrato, histórico Euribor e cenários) num ficheiro <code
             style="background:var(--fog);padding:1px 5px;border-radius:4px;font-size:.75rem">.json</code>. Importa
           quando quiseres recuperar tudo.</p>
+        <div id="backup-warn" class="warn" style="display:none;margin-bottom:16px"></div>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
           <button id="btn-export-data" class="btn btn-primary" onclick="exportarDados()"
             aria-label="Exportar dados para ficheiro JSON" data-i18n="config.export">⬇ Exportar dados</button>
@@ -564,53 +668,56 @@
       <div class="card">
         <div class="card-title" style="margin-bottom:16px"><span class="dot"></span><span data-i18n="guide.title">Guia
             de utilização</span></div>
-        <p style="font-size:.8rem;font-weight:600;color:var(--ink2);margin-bottom:10px" data-i18n="guide.tabs">O que faz
+        <p style="font-size:.8rem;font-weight:600;color:var(--text);margin-bottom:10px" data-i18n="guide.tabs">O que faz
           cada separador</p>
         <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">
-          <div style="background:var(--fog);border-radius:8px;padding:10px 12px;font-size:.8rem;color:var(--ink)"
+          <div style="background:var(--fog);border-radius:8px;padding:10px 12px;font-size:.8rem;color:var(--text)"
             data-i18n="guide.tabResumo">📊 Resumo — visão geral do crédito: capital em dívida, prestação actual, juros
             pagos e evolução gráfica do capital.</div>
-          <div style="background:var(--fog);border-radius:8px;padding:10px 12px;font-size:.8rem;color:var(--ink)"
+          <div style="background:var(--fog);border-radius:8px;padding:10px 12px;font-size:.8rem;color:var(--text)"
             data-i18n="guide.tabEuribor">📈 Euribor & Cenários — regista revisões reais da Euribor e define três
             cenários futuros (optimista, base, pessimista).</div>
-          <div style="background:var(--fog);border-radius:8px;padding:10px 12px;font-size:.8rem;color:var(--ink)"
+          <div style="background:var(--fog);border-radius:8px;padding:10px 12px;font-size:.8rem;color:var(--text)"
             data-i18n="guide.tabPlano">📋 Plano — tabela completa de amortização mês a mês, com destaque para o mês
             actual.</div>
-          <div style="background:var(--fog);border-radius:8px;padding:10px 12px;font-size:.8rem;color:var(--ink)"
+          <div style="background:var(--fog);border-radius:8px;padding:10px 12px;font-size:.8rem;color:var(--text)"
             data-i18n="guide.tabAbates">💰 Abates — regista abates antecipados realizados e simula o impacto de futuros
             abates no custo total.</div>
-          <div style="background:var(--fog);border-radius:8px;padding:10px 12px;font-size:.8rem;color:var(--ink)"
+          <div style="background:var(--fog);border-radius:8px;padding:10px 12px;font-size:.8rem;color:var(--text)"
             data-i18n="guide.tabCustos">🧾 Custos — regista despesas recorrentes como seguros de vida, multiriscos e
             taxas de manutenção.</div>
-          <div style="background:var(--fog);border-radius:8px;padding:10px 12px;font-size:.8rem;color:var(--ink)"
+          <div style="background:var(--fog);border-radius:8px;padding:10px 12px;font-size:.8rem;color:var(--text)"
+            data-i18n="guide.tabComparador">🏦 Comparador — simula o impacto de trocar o crédito para outro banco a
+            partir de um determinado mês.</div>
+          <div style="background:var(--fog);border-radius:8px;padding:10px 12px;font-size:.8rem;color:var(--text)"
             data-i18n="guide.tabConfig">⚙️ Configuração — dados do contrato, data de início, exportação e importação de
             dados.</div>
         </div>
         <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
-        <p style="font-size:.8rem;font-weight:600;color:var(--ink2);margin-bottom:8px" data-i18n="guide.storage">Onde
+        <p style="font-size:.8rem;font-weight:600;color:var(--text);margin-bottom:8px" data-i18n="guide.storage">Onde
           estão os dados</p>
-        <p style="font-size:.8rem;color:var(--ink);margin-bottom:8px" data-i18n="guide.storageText">Todos os dados são
+        <p style="font-size:.8rem;color:var(--text);margin-bottom:8px" data-i18n="guide.storageText">Todos os dados são
           guardados exclusivamente no teu browser (localStorage). Não são enviados para nenhum servidor. Se limpares o
           cache ou os dados do browser, os dados são apagados.</p>
         <div class="warn" style="margin-bottom:12px" data-i18n="guide.storageExport">💡 Para não perderes os dados, usa
           a função Exportar em Configuração → Exportar / Importar dados. Guarda o ficheiro .json num local seguro.</div>
         <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
-        <p style="font-size:.8rem;font-weight:600;color:var(--ink2);margin-bottom:8px" data-i18n="guide.exportImport">
+        <p style="font-size:.8rem;font-weight:600;color:var(--text);margin-bottom:8px" data-i18n="guide.exportImport">
           Exportar e importar dados</p>
-        <p style="font-size:.8rem;color:var(--ink);margin-bottom:12px" data-i18n="guide.exportText">Em Configuração,
+        <p style="font-size:.8rem;color:var(--text);margin-bottom:12px" data-i18n="guide.exportText">Em Configuração,
           clica em ⬇ Exportar dados para guardar tudo num ficheiro JSON. Para restaurar, clica em ⬆ Importar dados e
           selecciona o ficheiro. Útil para mudar de browser ou fazer backup.</p>
         <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
-        <p style="font-size:.8rem;font-weight:600;color:var(--ink2);margin-bottom:8px" data-i18n="guide.calcTitle">Notas
+        <p style="font-size:.8rem;font-weight:600;color:var(--text);margin-bottom:8px" data-i18n="guide.calcTitle">Notas
           sobre os cálculos</p>
-        <p style="font-size:.8rem;color:var(--ink)" data-i18n="guide.calcText">O plano usa o método de amortização
+        <p style="font-size:.8rem;color:var(--text)" data-i18n="guide.calcText">O plano usa o método de amortização
           francês (prestação constante). Em períodos de taxa variável, a prestação é recalculada com base em: Euribor +
           spread, capital em dívida e meses restantes. Os cenários futuros são estimativas.</p>
       </div>
       <div class="card">
         <div class="card-title" style="margin-bottom:16px"><span class="dot"></span><span
             data-i18n="guide.aboutTitle">Sobre o projecto</span></div>
-        <p style="font-size:.85rem;color:var(--ink);margin-bottom:12px" data-i18n="about.text">Uma ferramenta gratuita e
+        <p style="font-size:.85rem;color:var(--text);margin-bottom:12px" data-i18n="about.text">Uma ferramenta gratuita e
           open-source para simular e acompanhar empréstimos à habitação.</p>
         <ul style="font-size:.8rem;color:var(--steel);margin-bottom:16px;padding-left:20px">
           <li data-i18n="about.feature1">Simulação de plano de pagamentos com taxa fixa e variável</li>
@@ -623,7 +730,7 @@
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
           <span style="font-size:1.2rem">📖</span>
           <div>
-            <div style="font-weight:600;color:var(--ink)" data-i18n="about.source">Código fonte</div>
+            <div style="font-weight:600;color:var(--text)" data-i18n="about.source">Código fonte</div>
             <div style="font-size:.75rem;color:var(--steel)" data-i18n="about.sourceSub">Disponível no GitHub com
               licença MIT</div>
           </div>
@@ -639,6 +746,9 @@
     </div>
   </div>
 
+  <script src="config.js"></script>
+  <script src="utils.js"></script>
+  <script src="calc.js"></script>
   <script src="app.js"></script>
 </body>
 

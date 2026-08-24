@@ -5,11 +5,13 @@ A free and open-source tool to simulate and track mortgage loans. It calculates 
 ## Features
 
 - **Payment plan simulation**: With fixed and variable rate periods
-- **Euribor revision history**: Track Euribor rate changes over time
+- **Euribor revision history**: Track Euribor rate changes over time, with a chart of the applied rate and one-click import of any month's official rate from Banco de Portugal
 - **Future scenarios**: Optimistic, base, and pessimistic forecasts
 - **Early repayment simulation**: Calculate the impact of prepayments
+- **Bank-switch comparator**: Compare keeping your loan vs. refinancing with another bank
 - **Export/Import data**: Backup and restore your configuration
 - **Auto-save**: Data stored locally in the browser
+- **Installable, works offline**: Add it to your home screen or desktop; it keeps working without a connection
 
 ## How to use
 
@@ -32,6 +34,14 @@ cd credito-habitacao
 # Open index.html in your browser or use a local server
 python3 -m http.server 8000
 # Visit http://localhost:8000
+```
+
+### Running tests
+
+The amortization calculation engine (`calc.js`) has an automated test suite, using Node's built-in test runner (no dependencies):
+
+```bash
+npm test
 ```
 
 ## Contributing

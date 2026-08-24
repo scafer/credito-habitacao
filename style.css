@@ -7,6 +7,8 @@
   --fog: #e8f1fa;
   --paper: #f4f8fd;
   --white: #ffffff;
+  --surface: #ffffff;
+  --text: #0e1a2b;
   --gold: #c8923a;
   --gold2: #f0b850;
   --green: #1a6e45;
@@ -16,7 +18,38 @@
   --amber: #d97706;
   --border: rgba(44, 82, 130, 0.15);
   --shadow: 0 2px 16px rgba(14, 26, 43, 0.10);
-  --r: 12px
+  --r: 12px;
+  color-scheme: light
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --steel: #82abd9;
+    --mist: #24374d;
+    --fog: #182636;
+    --paper: #0b1420;
+    --surface: #131f30;
+    --text: #e7edf5;
+    --mid: #4a86c6;
+    --green: #27a96a;
+    --border: rgba(200, 221, 240, 0.15);
+    --shadow: 0 2px 16px rgba(0, 0, 0, 0.35);
+    color-scheme: dark
+  }
+}
+
+:root[data-theme="dark"] {
+  --steel: #82abd9;
+  --mist: #24374d;
+  --fog: #182636;
+  --paper: #0b1420;
+  --surface: #131f30;
+  --text: #e7edf5;
+  --mid: #4a86c6;
+  --green: #27a96a;
+  --border: rgba(200, 221, 240, 0.15);
+  --shadow: 0 2px 16px rgba(0, 0, 0, 0.35);
+  color-scheme: dark
 }
 
 * {
@@ -28,7 +61,7 @@
 body {
   font-family: 'DM Sans', sans-serif;
   background: var(--paper);
-  color: var(--ink);
+  color: var(--text);
   min-height: 100vh
 }
 
@@ -174,7 +207,7 @@ body {
 }
 
 .card {
-  background: var(--white);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r);
   box-shadow: var(--shadow);
@@ -193,7 +226,7 @@ body {
   font-family: 'Fraunces', serif;
   font-size: .95rem;
   font-weight: 600;
-  color: var(--ink2);
+  color: var(--text);
   display: flex;
   align-items: center;
   gap: 8px
@@ -253,11 +286,17 @@ body {
   color: rgba(255, 255, 255, .5)
 }
 
+.stat.green .stat-label,
+.stat.red .stat-label,
+.stat.gold .stat-label {
+  color: #4a7fb5
+}
+
 .stat-val {
   font-family: 'Fraunces', serif;
   font-size: 1.15rem;
   font-weight: 600;
-  color: var(--ink)
+  color: var(--text)
 }
 
 .stat.accent .stat-val {
@@ -265,7 +304,7 @@ body {
 }
 
 .stat.green .stat-val {
-  color: var(--green)
+  color: #1a6e45
 }
 
 .stat.red .stat-val {
@@ -323,7 +362,7 @@ body {
 .field-label {
   flex: 1;
   font-size: .82rem;
-  color: var(--ink)
+  color: var(--text)
 }
 
 .field-hint {
@@ -352,7 +391,7 @@ body {
 .field-row select:focus {
   outline: none;
   border-color: var(--mid);
-  background: var(--white)
+  background: var(--surface)
 }
 
 .btn {
@@ -380,7 +419,7 @@ body {
 
 .btn-ghost {
   background: var(--fog);
-  color: var(--ink2);
+  color: var(--text);
   border: 1px solid var(--border)
 }
 
@@ -408,7 +447,7 @@ body {
   border-radius: 8px;
   margin-bottom: 4px;
   border: 1px solid var(--border);
-  background: var(--white);
+  background: var(--surface);
   transition: box-shadow .15s
 }
 
@@ -428,7 +467,7 @@ body {
 .entry-period {
   font-size: .78rem;
   font-weight: 600;
-  color: var(--ink2)
+  color: var(--text)
 }
 
 .entry-bar-wrap {
@@ -492,7 +531,7 @@ body {
   border: 1px solid var(--border);
   background: var(--fog);
   border-radius: 8px;
-  color: var(--ink2);
+  color: var(--text);
   cursor: pointer;
   transition: .15s
 }
@@ -593,7 +632,7 @@ body {
   font-size: .85rem;
   font-weight: 600;
   color: var(--mid);
-  background: var(--white)
+  background: var(--surface)
 }
 
 .form-field input:focus,
@@ -633,7 +672,8 @@ tbody td {
   padding: 8px 10px;
   text-align: right;
   border-bottom: 1px solid var(--fog);
-  font-size: .75rem
+  font-size: .75rem;
+  color: var(--ink)
 }
 
 tbody td:first-child {
@@ -642,7 +682,7 @@ tbody td:first-child {
 }
 
 tbody tr:hover td {
-  background: var(--fog)
+  background: #e8f1fa
 }
 
 .row-fixed {
@@ -806,7 +846,7 @@ tbody tr:hover td {
 
 .sc-box-sub {
   font-size: .7rem;
-  color: var(--steel);
+  color: #4a7fb5;
   margin-top: 4px
 }
 
@@ -857,6 +897,42 @@ tbody tr:hover td {
   padding: 32px;
   color: var(--steel);
   font-size: .82rem
+}
+
+.undo-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translate(-50%, 16px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--ink);
+  color: var(--white);
+  padding: 10px 12px 10px 16px;
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  font-size: .8rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s, transform .18s;
+  z-index: 100
+}
+
+.undo-toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  pointer-events: auto
+}
+
+.undo-toast .btn {
+  background: transparent;
+  color: var(--gold2);
+  border: 1px solid rgba(255, 255, 255, .25)
+}
+
+.undo-toast .btn:hover {
+  background: rgba(255, 255, 255, .1)
 }
 
 .sc-input {
