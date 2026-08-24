@@ -26,11 +26,12 @@
     const fixedMonths = loanState.contract.fixedMonths;
     if (month <= fixedMonths) return null;
     const hist = loanState.euriborHistory || [];
-    // Each historical entry covers [startMonth, startMonth+3[; after the
+    const tenor = loanState.euriborTenor || 3;
+    // Each historical entry covers [startMonth, startMonth+tenor[; after the
     // last known revision, fall back to the requested scenario.
     for (let i = hist.length - 1; i >= 0; i--) {
       const h = hist[i];
-      const fim = h.startMonth + 3;
+      const fim = h.startMonth + tenor;
       if (month >= h.startMonth && month < fim) {
         const rate = (h.rates && h.rates[loanState.euriborTenor]) ?? h.rate ?? 0;
         return { rate: rate / 100, type: 'hist' };

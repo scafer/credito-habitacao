@@ -394,6 +394,11 @@ body {
   background: var(--surface)
 }
 
+#euribor-import-month:focus + #euribor-import-month-label {
+  border-color: var(--mid);
+  background: var(--surface)
+}
+
 .btn {
   display: inline-flex;
   align-items: center;

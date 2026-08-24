@@ -186,7 +186,7 @@ function renderResumo() {
     }
   }
   const lh = euriborHistory[euriborHistory.length - 1];
-  const nxRev = lh ? lh.startMonth + 3 : cfgI('cfg-fixos') + 1;
+  const nxRev = lh ? lh.startMonth + euriborTenor : cfgI('cfg-fixos') + 1;
   const tenorLabel = euriborTenor + 'M';
   const lastRate = lh ? ((lh.rates && lh.rates[euriborTenor]) ?? lh.rate) : null;
   const lastStatus = lh ? `${PCT(lastRate)} (${tenorLabel} ${t.summary.fromMonth || 'desde mês'} ${lh.startMonth})` : t.summary.none;
@@ -294,11 +294,11 @@ function renderTl() {
   periods.push({ label: `${t.table.months} 1–${F}`, eu: null, taxa: cfg('cfg-fixa'), type: 'fixed', desc: t.euribor.fixedRateDesc });
   for (let i = 0; i < euriborHistory.length; i++) {
     const hist = euriborHistory[i];
-    const fim = hist.startMonth + 2;
+    const fim = hist.startMonth + euriborTenor - 1;
     const histRate = (hist.rates && hist.rates[euriborTenor]) ?? hist.rate ?? 0;
     periods.push({ label: `${t.table.months} ${hist.startMonth}–${fim}`, eu: histRate, taxa: histRate + sp, type: 'hist', desc: hist.desc });
   }
-  const lastM = euriborHistory.length ? euriborHistory[euriborHistory.length - 1].startMonth + 3 : F + 1;
+  const lastM = euriborHistory.length ? euriborHistory[euriborHistory.length - 1].startMonth + euriborTenor : F + 1;
   if (lastM <= N) {
     const scEu = (scenarioRates[tlSc] && scenarioRates[tlSc][euriborTenor]) || 0;
     const scLbl = { opt: t.euribor.scenarioOpt, base: t.euribor.scenarioBase, pess: t.euribor.scenarioPess };
@@ -803,6 +803,15 @@ function toggleAbateForm() { const el = document.getElementById('abate-form'); e
 
 const BDP_EURIBOR_URL = 'https://bpstat.bportugal.pt/data/v1/domains/22/datasets/2829cb9155cb4f6ba6906db6b204c4bc/?lang=PT&series_ids=13168436,13168438,13168437&decimal=true';
 
+function updateEuriborImportDateLabel() {
+  const el = document.getElementById('euribor-import-month');
+  const label = document.getElementById('euribor-import-month-label');
+  if (!el || !label) return;
+  if (!el.value) { label.textContent = '--/--/----'; return; }
+  const [y, m, d] = el.value.split('-');
+  label.textContent = `${d}/${m}/${y}`;
+}
+
 async function importarEuriborBdP() {
   const t = i18n[lang] || i18n.pt;
   const btn = document.getElementById('btn-import-euribor');
@@ -824,7 +833,7 @@ async function importarEuriborBdP() {
     const n = dates.length;
     const values = data.value;
     const monthInput = document.getElementById('euribor-import-month');
-    const requestedYM = monthInput ? monthInput.value : '';
+    const requestedYM = monthInput ? monthInput.value.slice(0, 7) : '';
     const idx = requestedYM ? dates.findIndex(d => d.startsWith(requestedYM)) : n - 1;
     if (idx === -1) throw new Error('month-not-found');
     const r3 = Math.round(values[idx] * 1000) / 1000;
@@ -832,8 +841,11 @@ async function importarEuriborBdP() {
     const r12 = Math.round(values[2 * n + idx] * 1000) / 1000;
     const [Y, M] = dates[idx].split('-').map(Number);
 
+    // BdP reports the Euribor average for a calendar month, but banks only
+    // start applying it 2 months later (publication + revision lag).
+    const EURIBOR_APPLY_LAG_MONTHS = 2;
     const y = startDate.getFullYear(), m = startDate.getMonth() + 1;
-    const loanMonth = (Y - y) * 12 + (M - m) + 1;
+    const loanMonth = (Y - y) * 12 + (M - m) + 1 + EURIBOR_APPLY_LAG_MONTHS;
     if (loanMonth < 1) throw new Error('before-start');
 
     const dateLabel = String(M).padStart(2, '0') + '/' + Y;

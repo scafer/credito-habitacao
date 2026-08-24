@@ -188,8 +188,15 @@
           <div class="card-title"><span class="dot"></span><span data-i18n="euribor.history">Histórico de revisões
               (real)</span></div>
           <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-            <input type="month" id="euribor-import-month" aria-label="Mês a importar" title="Mês a importar (vazio = mais recente disponível)"
-              style="width:148px;border:1.5px solid var(--mist);border-radius:8px;padding:8px 10px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;color:var(--mid);background:var(--fog)">
+            <div style="position:relative;width:148px;flex-shrink:0">
+              <input type="date" id="euribor-import-month" aria-label="Mês a importar (escolhe qualquer dia desse mês)" title="Mês a importar (vazio = mais recente disponível) — escolhe qualquer dia do mês pretendido"
+                oninput="updateEuriborImportDateLabel()"
+                onclick="try{this.showPicker&&this.showPicker()}catch(e){}"
+                style="position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;border:0;opacity:0;cursor:pointer">
+              <div id="euribor-import-month-label"
+                style="pointer-events:none;width:148px;border:1.5px solid var(--mist);border-radius:8px;padding:8px 10px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;color:var(--steel);background:var(--fog);transition:border-color .15s,background .15s">
+                --/--/----</div>
+            </div>
             <button id="btn-import-euribor" class="btn btn-ghost btn-sm" onclick="importarEuriborBdP()"
               aria-label="Importar Euribor do Banco de Portugal" data-i18n="euribor.importBtn">🔄 Importar
               (BdP)</button>
