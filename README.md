@@ -4,11 +4,14 @@ A free and open-source tool to simulate and track mortgage loans. It calculates 
 
 ## Features
 
+- **Multi-loan tracking**: Manage several mortgages at once, with an aggregate view across all of them
 - **Payment plan simulation**: With fixed and variable rate periods
 - **Euribor revision history**: Track Euribor rate changes over time, with a chart of the applied rate and one-click import of any month's official rate from Banco de Portugal
 - **Future scenarios**: Optimistic, base, and pessimistic forecasts
-- **Early repayment simulation**: Calculate the impact of prepayments
-- **Bank-switch comparator**: Compare keeping your loan vs. refinancing with another bank
+- **Inline editing**: Fix a typo in a Euribor revision, prepayment, or cost entry without deleting and re-adding it
+- **Early repayment simulation**: Calculate the impact of prepayments, individually and as cumulative savings over time
+- **Bank-switch comparator**: Compare keeping your loan vs. refinancing, weighing several bank offers side by side
+- **Euribor review reminders**: Optional browser notifications when a loan's Euribor is due for review (only while the app is open — this is a static site with no server, so there's no background push while it's closed)
 - **Export/Import data**: Backup and restore your configuration
 - **Auto-save**: Data stored locally in the browser
 - **Installable, works offline**: Add it to your home screen or desktop; it keeps working without a connection
@@ -17,9 +20,9 @@ A free and open-source tool to simulate and track mortgage loans. It calculates 
 
 1. Open `index.html` in your browser
 2. Configure your contract details in the "Settings" tab
-3. Add your Euribor revision history in the "Euribor & Scenarios" tab
+3. Add your Euribor revision history in the "Euribor & Scenarios" tab (or import it automatically from Banco de Portugal)
 4. Define future rate scenarios
-5. Explore the other tabs for simulations and payment plans
+5. Explore the other tabs for simulations, payment plans, and comparing several loans at once
 
 ### Requirements
 

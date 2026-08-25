@@ -1,10 +1,11 @@
-const CACHE_NAME = 'credito-habitacao-v3';
+const CACHE_NAME = 'credito-habitacao-v4';
 const PRECACHE_URLS = [
   './',
   './index.html',
   './style.css',
   './config.js',
   './utils.js',
+  './i18n.js',
   './calc.js',
   './app.js',
   './chart.min.js',

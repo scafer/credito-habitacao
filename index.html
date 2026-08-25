@@ -714,29 +714,35 @@
             de utilização</span></div>
         <p style="font-size:.8rem;font-weight:600;color:var(--text);margin-bottom:10px" data-i18n="guide.tabs">O que faz
           cada separador</p>
-        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
           <div style="background:var(--fog);border-radius:8px;padding:10px 12px;font-size:.8rem;color:var(--text)"
             data-i18n="guide.tabResumo">📊 Resumo — visão geral do crédito: capital em dívida, prestação actual, juros
             pagos e evolução gráfica do capital.</div>
           <div style="background:var(--fog);border-radius:8px;padding:10px 12px;font-size:.8rem;color:var(--text)"
-            data-i18n="guide.tabEuribor">📈 Euribor & Cenários — regista revisões reais da Euribor e define três
-            cenários futuros (optimista, base, pessimista).</div>
+            data-i18n="guide.tabAgregado">📁 Todos os créditos — vista agregada de todos os créditos que geres nesta
+            app: capital total em dívida, prestação total e um gráfico comparativo por crédito.</div>
+          <div style="background:var(--fog);border-radius:8px;padding:10px 12px;font-size:.8rem;color:var(--text)"
+            data-i18n="guide.tabEuribor">📈 Euribor & Cenários — regista revisões reais da Euribor (ou importa
+            automaticamente do Banco de Portugal) e define três cenários futuros (optimista, base, pessimista).</div>
           <div style="background:var(--fog);border-radius:8px;padding:10px 12px;font-size:.8rem;color:var(--text)"
             data-i18n="guide.tabPlano">📋 Plano — tabela completa de amortização mês a mês, com destaque para o mês
             actual.</div>
           <div style="background:var(--fog);border-radius:8px;padding:10px 12px;font-size:.8rem;color:var(--text)"
-            data-i18n="guide.tabAbates">💰 Abates — regista abates antecipados realizados e simula o impacto de futuros
-            abates no custo total.</div>
+            data-i18n="guide.tabAbates">💰 Abates — regista abates antecipados realizados, simula o impacto de futuros
+            abates, e acompanha a poupança acumulada de todos os abates num gráfico.</div>
           <div style="background:var(--fog);border-radius:8px;padding:10px 12px;font-size:.8rem;color:var(--text)"
             data-i18n="guide.tabCustos">🧾 Custos — regista despesas recorrentes como seguros de vida, multiriscos e
             taxas de manutenção.</div>
           <div style="background:var(--fog);border-radius:8px;padding:10px 12px;font-size:.8rem;color:var(--text)"
-            data-i18n="guide.tabComparador">🏦 Comparador — simula o impacto de trocar o crédito para outro banco a
-            partir de um determinado mês.</div>
+            data-i18n="guide.tabComparador">🏦 Comparador — compara manter o crédito actual com várias propostas de
+            bancos em simultâneo, a partir de um determinado mês.</div>
           <div style="background:var(--fog);border-radius:8px;padding:10px 12px;font-size:.8rem;color:var(--text)"
-            data-i18n="guide.tabConfig">⚙️ Configuração — dados do contrato, data de início, exportação e importação de
-            dados.</div>
+            data-i18n="guide.tabConfig">⚙️ Configuração — dados do contrato, data de início, lembretes de revisão
+            Euribor, exportação e importação de dados.</div>
         </div>
+        <p style="font-size:.78rem;color:var(--steel);margin-bottom:16px" data-i18n="guide.editingNote">✎ Em qualquer
+          lista (Euribor, Abates, Custos), clica no ícone de lápis para editar uma entrada existente — não precisas de
+          a apagar e voltar a criar.</p>
         <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
         <p style="font-size:.8rem;font-weight:600;color:var(--text);margin-bottom:8px" data-i18n="guide.storage">Onde
           estão os dados</p>
@@ -752,6 +758,13 @@
           clica em ⬇ Exportar dados para guardar tudo num ficheiro JSON. Para restaurar, clica em ⬆ Importar dados e
           selecciona o ficheiro. Útil para mudar de browser ou fazer backup.</p>
         <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
+        <p style="font-size:.8rem;font-weight:600;color:var(--text);margin-bottom:8px" data-i18n="guide.remindersTitle">
+          Lembretes de revisão Euribor</p>
+        <p style="font-size:.8rem;color:var(--text)" data-i18n="guide.remindersText">Em Configuração, podes activar
+          notificações do browser para te avisar quando a Euribor deste crédito estiver pronta a ser revista. Como
+          esta app não tem servidor, os lembretes só funcionam enquanto a página estiver aberta ou instalada — não é
+          um alerta em segundo plano com a app fechada.</p>
+        <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
         <p style="font-size:.8rem;font-weight:600;color:var(--text);margin-bottom:8px" data-i18n="guide.calcTitle">Notas
           sobre os cálculos</p>
         <p style="font-size:.8rem;color:var(--text)" data-i18n="guide.calcText">O plano usa o método de amortização
@@ -764,11 +777,15 @@
         <p style="font-size:.85rem;color:var(--text);margin-bottom:12px" data-i18n="about.text">Uma ferramenta gratuita e
           open-source para simular e acompanhar empréstimos à habitação.</p>
         <ul style="font-size:.8rem;color:var(--steel);margin-bottom:16px;padding-left:20px">
-          <li data-i18n="about.feature1">Simulação de plano de pagamentos com taxa fixa e variável</li>
-          <li data-i18n="about.feature2">Histórico de revisões de taxa Euribor</li>
-          <li data-i18n="about.feature3">Cenários optimista, base e pessimista para previsões</li>
-          <li data-i18n="about.feature4">Simulação de amortizações antecipadas</li>
-          <li data-i18n="about.feature5">Dados guardados automaticamente no browser</li>
+          <li data-i18n="about.feature1">Acompanhamento de vários créditos em simultâneo</li>
+          <li data-i18n="about.feature2">Simulação de plano de pagamentos com taxa fixa e variável</li>
+          <li data-i18n="about.feature3">Histórico de revisões de taxa Euribor, com edição e importação automática do
+            Banco de Portugal</li>
+          <li data-i18n="about.feature4">Cenários optimista, base e pessimista para previsões</li>
+          <li data-i18n="about.feature5">Simulação de amortizações antecipadas com poupança acumulada</li>
+          <li data-i18n="about.feature6">Comparação com várias propostas de outros bancos</li>
+          <li data-i18n="about.feature7">Lembretes de revisão Euribor (com a app aberta)</li>
+          <li data-i18n="about.feature8">Dados guardados automaticamente no browser</li>
         </ul>
         <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
@@ -804,6 +821,7 @@
 
   <script src="config.js"></script>
   <script src="utils.js"></script>
+  <script src="i18n.js"></script>
   <script src="calc.js"></script>
   <script src="app.js"></script>
 </body>
