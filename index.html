@@ -14,7 +14,7 @@
     href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,300&family=DM+Sans:wght@300;400;500;600&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="chart.min.js"></script>
 </head>
 
 <body>
@@ -216,11 +216,11 @@
         </div>
         <div class="add-form" id="add-form" style="display:none">
           <div class="add-form-grid">
-            <div class="form-field"><label data-i18n="form.startMonth">Mês de início (nº do mês do
+            <div class="form-field"><label for="ah-mes" data-i18n="form.startMonth">Mês de início (nº do mês do
                 crédito)</label><input type="number" id="ah-mes" placeholder="ex: 28" min="1" required></div>
-            <div class="form-field"><label data-i18n="form.euriborFuture" id="ah-eu-label">Euribor 3M (%)</label><input
+            <div class="form-field"><label for="ah-eu" data-i18n="form.euriborFuture" id="ah-eu-label">Euribor 3M (%)</label><input
                 type="number" id="ah-eu" placeholder="ex: 2.109" step="0.001" min="0" max="10" required></div>
-            <div class="form-field" style="grid-column:1/-1"><label data-i18n="form.description">Descrição
+            <div class="form-field" style="grid-column:1/-1"><label for="ah-desc" data-i18n="form.description">Descrição
                 (opcional)</label><input type="text" id="ah-desc" placeholder="ex: Revisão Q3 2026"></div>
           </div>
           <div style="display:flex;gap:8px">
@@ -243,8 +243,9 @@
           <div class="scenario-card opt">
             <div class="scenario-card-title" data-i18n="euribor.scenarioOpt">🟢 Cenário Optimista</div>
             <div class="field-row" style="padding:0;border:none">
-              <div class="field-label" data-i18n="form.euriborFuture">Euribor futura (%)</div>
+              <label class="field-label" for="sc-opt" data-i18n="form.euriborFuture">Euribor futura (%)</label>
               <input type="number" id="sc-opt" value="1.50" step="0.01" min="0" max="10"
+                aria-label="Euribor futura (%) — Cenário Optimista"
                 oninput="setScenarioRate('opt', this.value)"
                 style="width:120px;border:1.5px solid #86efac;border-radius:8px;padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:600;color:#15803d;background:#f0fdf4;text-align:right">
             </div>
@@ -252,8 +253,9 @@
           <div class="scenario-card base">
             <div class="scenario-card-title" data-i18n="euribor.scenarioBase">🟡 Cenário Base</div>
             <div class="field-row" style="padding:0;border:none">
-              <div class="field-label" data-i18n="form.euriborFuture">Euribor futura (%)</div>
+              <label class="field-label" for="sc-base" data-i18n="form.euriborFuture">Euribor futura (%)</label>
               <input type="number" id="sc-base" value="2.50" step="0.01" min="0" max="10"
+                aria-label="Euribor futura (%) — Cenário Base"
                 oninput="setScenarioRate('base', this.value)"
                 style="width:120px;border:1.5px solid #fcd34d;border-radius:8px;padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:600;color:#b45309;background:#fffbeb;text-align:right">
             </div>
@@ -261,8 +263,9 @@
           <div class="scenario-card pess">
             <div class="scenario-card-title" data-i18n="euribor.scenarioPess">🔴 Cenário Pessimista</div>
             <div class="field-row" style="padding:0;border:none">
-              <div class="field-label" data-i18n="form.euriborFuture">Euribor futura (%)</div>
+              <label class="field-label" for="sc-pess" data-i18n="form.euriborFuture">Euribor futura (%)</label>
               <input type="number" id="sc-pess" value="4.00" step="0.01" min="0" max="10"
+                aria-label="Euribor futura (%) — Cenário Pessimista"
                 oninput="setScenarioRate('pess', this.value)"
                 style="width:120px;border:1.5px solid #fca5a5;border-radius:8px;padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:600;color:#dc2626;background:#fef2f2;text-align:right">
             </div>
@@ -358,18 +361,19 @@
         </div>
         <div class="add-form" id="abate-form" style="display:none">
           <div class="add-form-grid">
-            <div class="form-field"><label data-i18n="prepayment.creditMonth">Mês do crédito em que foi
-                feito</label><input type="number" id="ab-hist-mes" placeholder="ex: 26" min="1" required></div>
-            <div class="form-field"><label data-i18n="prepayment.amountAmortized">Valor amortizado (€)</label><input
+            <div class="form-field"><label for="ab-hist-mes" data-i18n="prepayment.creditMonth">Mês do crédito em que foi
+                feito</label><input type="number" id="ab-hist-mes" placeholder="ex: 26" min="1" required
+                oninput="refreshPenaltyRateDefault('ab-hist-penal', parseInt(this.value) || 0)"></div>
+            <div class="form-field"><label for="ab-hist-val" data-i18n="prepayment.amountAmortized">Valor amortizado (€)</label><input
                 type="number" id="ab-hist-val" placeholder="ex: 5000" step="100" min="0" required></div>
-            <div class="form-field"><label data-i18n="prepayment.optionChoice">Opção escolhida</label><select
+            <div class="form-field"><label for="ab-hist-op" data-i18n="prepayment.optionChoice">Opção escolhida</label><select
                 id="ab-hist-op">
                 <option value="term" data-i18n="prepayment.historyTextTerm">Reduziu prazo</option>
                 <option value="payment" selected data-i18n="prepayment.historyTextPayment">Reduziu prestação</option>
               </select></div>
-            <div class="form-field"><label data-i18n="prepayment.penaltyRate">Taxa de penalização (%)</label><input
+            <div class="form-field"><label for="ab-hist-penal" data-i18n="prepayment.penaltyRate">Taxa de penalização (%)</label><input
                 type="number" id="ab-hist-penal" value="0.5" min="0" max="10" step="0.1" placeholder="ex: 0.5"></div>
-            <div class="form-field" style="grid-column:1/-1"><label data-i18n="form.description">Descrição
+            <div class="form-field" style="grid-column:1/-1"><label for="ab-hist-desc" data-i18n="form.description">Descrição
                 (opcional)</label><input type="text" id="ab-hist-desc" placeholder="ex: Bónus anual"></div>
           </div>
           <div style="display:flex;gap:8px">
@@ -386,33 +390,33 @@
         <div class="card-title" style="margin-bottom:16px"><span class="dot"></span><span
             data-i18n="prepayment.simulator">Simular abate antecipado</span></div>
         <div class="field-row">
-          <div class="field-label"><span data-i18n="prepayment.prepayMonth">Mês em que faria o abate</span>
+          <label class="field-label" for="ab-mes"><span data-i18n="prepayment.prepayMonth">Mês em que faria o abate</span>
             <div class="field-hint" data-i18n="prepayment.prepayMonthHint">Nº do mês do crédito</div>
-          </div>
+          </label>
           <input type="number" id="ab-mes" value="" min="1" oninput="calcAbate()" style="width:148px">
         </div>
         <div class="field-row">
-          <div class="field-label"><span data-i18n="prepayment.prepayValue">Valor do abate (€)</span>
+          <label class="field-label" for="ab-val"><span data-i18n="prepayment.prepayValue">Valor do abate (€)</span>
             <div class="field-hint" data-i18n="prepayment.prepayValueHint">Montante a amortizar</div>
-          </div>
+          </label>
           <input type="number" id="ab-val" value="10000" step="500" min="0" oninput="calcAbate()">
         </div>
         <div class="field-row">
-          <div class="field-label" data-i18n="prepayment.optionAfter">Opção após abate</div>
+          <label class="field-label" for="ab-op" data-i18n="prepayment.optionAfter">Opção após abate</label>
           <select id="ab-op" onchange="calcAbate()">
             <option value="term" data-i18n="prepayment.optionTerm">Reduzir prazo</option>
             <option value="payment" selected data-i18n="prepayment.optionPayment">Reduzir prestação</option>
           </select>
         </div>
         <div class="field-row">
-          <div class="field-label"><span data-i18n="prepayment.penaltyRate">Taxa de penalização</span>
+          <label class="field-label" for="ab-penal-rate"><span data-i18n="prepayment.penaltyRate">Taxa de penalização</span>
             <div class="field-hint">Verificar no contrato</div>
-          </div>
+          </label>
           <input type="number" id="ab-penal-rate" value="0.5" min="0" max="10" step="0.1" oninput="calcAbate()"
             style="width:148px" placeholder="ex: 0.5">
         </div>
         <div class="field-row">
-          <div class="field-label" data-i18n="prepayment.scenarioFuture">Cenário Euribor futura</div>
+          <label class="field-label" for="ab-sc" data-i18n="prepayment.scenarioFuture">Cenário Euribor futura</label>
           <select id="ab-sc" onchange="onAbScChange()">
             <option value="opt" data-i18n="euribor.scenarioOpt">Optimista</option>
             <option value="base" selected data-i18n="euribor.scenarioBase">Base</option>
@@ -421,7 +425,7 @@
           </select>
         </div>
         <div class="field-row" id="ab-sc-custom-row" style="display:none">
-          <div class="field-label" data-i18n="prepayment.customRateLabel">Taxa Euribor personalizada (%)</div>
+          <label class="field-label" for="ab-sc-custom" data-i18n="prepayment.customRateLabel">Taxa Euribor personalizada (%)</label>
           <input type="number" id="ab-sc-custom" value="3.00" step="0.01" min="0" oninput="calcAbate()"
             style="width:148px">
         </div>
@@ -476,20 +480,20 @@
         </div>
         <div class="add-form" id="custos-form" style="display:none">
           <div class="add-form-grid">
-            <div class="form-field"><label data-i18n="costs.name">Designação</label><input type="text" id="c-nome"
+            <div class="form-field"><label for="c-nome" data-i18n="costs.name">Designação</label><input type="text" id="c-nome"
                 placeholder="ex: Seguro de vida"></div>
-            <div class="form-field"><label data-i18n="costs.amount">Valor (€)</label><input type="number" id="c-valor"
+            <div class="form-field"><label for="c-valor" data-i18n="costs.amount">Valor (€)</label><input type="number" id="c-valor"
                 placeholder="ex: 45.00" step="0.01" min="0"></div>
-            <div class="form-field"><label data-i18n="costs.frequency">Frequência</label><select id="c-freq">
+            <div class="form-field"><label for="c-freq" data-i18n="costs.frequency">Frequência</label><select id="c-freq">
                 <option value="monthly" data-i18n="costs.monthly">Mensal</option>
                 <option value="annual" data-i18n="costs.annual">Anual</option>
                 <option value="oneTime" data-i18n="costs.oneTime">Pontual</option>
               </select></div>
-            <div class="form-field"><label data-i18n="costs.startMonth">Mês início (crédito)</label><input type="number"
+            <div class="form-field"><label for="c-inicio" data-i18n="costs.startMonth">Mês início (crédito)</label><input type="number"
                 id="c-inicio" placeholder="ex: 1" min="1" value="1"></div>
-            <div class="form-field"><label data-i18n="costs.endMonth">Mês fim (opcional)</label><input type="number"
+            <div class="form-field"><label for="c-fim" data-i18n="costs.endMonth">Mês fim (opcional)</label><input type="number"
                 id="c-fim" placeholder="ex: 360" min="1"></div>
-            <div class="form-field" style="grid-column:1/-1"><label data-i18n="costs.desc">Descrição
+            <div class="form-field" style="grid-column:1/-1"><label for="c-desc" data-i18n="costs.desc">Descrição
                 (opcional)</label><input type="text" id="c-desc" placeholder="ex: renovação anual"></div>
           </div>
           <div style="display:flex;gap:8px">
@@ -529,36 +533,36 @@
           crédito para outro banco a partir de um determinado mês, com um novo spread (e, opcionalmente, um novo
           período de taxa fixa), face a manter o crédito actual.</p>
         <div class="field-row">
-          <div class="field-label"><span data-i18n="refi.switchMonth">Mês da troca</span>
+          <label class="field-label" for="refi-mes"><span data-i18n="refi.switchMonth">Mês da troca</span>
             <div class="field-hint" data-i18n="refi.switchMonthHint">Nº do mês do crédito</div>
-          </div>
+          </label>
           <input type="number" id="refi-mes" min="1" oninput="calcComparador()" style="width:148px">
         </div>
         <div class="field-row">
-          <div class="field-label" data-i18n="refi.newSpread">Novo spread (%)</div>
+          <label class="field-label" for="refi-spread" data-i18n="refi.newSpread">Novo spread (%)</label>
           <input type="number" id="refi-spread" value="0.60" min="0" max="5" step="0.01" oninput="calcComparador()"
             style="width:148px">
         </div>
         <div class="field-row">
-          <div class="field-label"><span data-i18n="refi.newFixedMonths">Novos meses de taxa fixa</span>
+          <label class="field-label" for="refi-fixos"><span data-i18n="refi.newFixedMonths">Novos meses de taxa fixa</span>
             <div class="field-hint" data-i18n="refi.newFixedMonthsHint">0 se ficar logo em taxa variável</div>
-          </div>
+          </label>
           <input type="number" id="refi-fixos" value="0" min="0" oninput="calcComparador()" style="width:148px">
         </div>
         <div class="field-row">
-          <div class="field-label" data-i18n="refi.newFixedRate">Nova taxa fixa anual (%)</div>
+          <label class="field-label" for="refi-fixa" data-i18n="refi.newFixedRate">Nova taxa fixa anual (%)</label>
           <input type="number" id="refi-fixa" value="3.00" min="0" max="20" step="0.01" oninput="calcComparador()"
             style="width:148px">
         </div>
         <div class="field-row">
-          <div class="field-label"><span data-i18n="refi.transferCost">Custos de transferência (€)</span>
+          <label class="field-label" for="refi-custo"><span data-i18n="refi.transferCost">Custos de transferência (€)</span>
             <div class="field-hint" data-i18n="refi.transferCostHint">Comissões, escritura, registo, etc.</div>
-          </div>
+          </label>
           <input type="number" id="refi-custo" value="1000" min="0" step="50" oninput="calcComparador()"
             style="width:148px">
         </div>
         <div class="field-row">
-          <div class="field-label" data-i18n="refi.scenarioFuture">Cenário Euribor futura</div>
+          <label class="field-label" for="refi-sc" data-i18n="refi.scenarioFuture">Cenário Euribor futura</label>
           <select id="refi-sc" onchange="calcComparador()">
             <option value="opt" data-i18n="euribor.scenarioOpt">Optimista</option>
             <option value="base" selected data-i18n="euribor.scenarioBase">Base</option>
@@ -602,44 +606,44 @@
         <div class="card-title" style="margin-bottom:16px"><span class="dot"></span><span data-i18n="config.title">Dados
             do contrato</span></div>
         <div class="field-row">
-          <div class="field-label" data-i18n="config.initialCapital">Capital inicial (€)</div><input type="number"
+          <label class="field-label" for="cfg-capital" data-i18n="config.initialCapital">Capital inicial (€)</label><input type="number"
             id="cfg-capital" value="150000" min="0" step="1000" required oninput="recalcDebounced()">
         </div>
         <div class="field-row">
-          <div class="field-label" data-i18n="config.termYears">Prazo total (anos)</div><input type="number"
+          <label class="field-label" for="cfg-prazo" data-i18n="config.termYears">Prazo total (anos)</label><input type="number"
             id="cfg-prazo" value="30" min="1" max="50" required oninput="recalcDebounced()">
         </div>
         <div class="field-row">
-          <div class="field-label" data-i18n="config.fixedMonths">Meses taxa fixa</div><input type="number"
+          <label class="field-label" for="cfg-fixos" data-i18n="config.fixedMonths">Meses taxa fixa</label><input type="number"
             id="cfg-fixos" value="24" min="0" required oninput="recalcDebounced()">
         </div>
         <div class="field-row">
-          <div class="field-label" data-i18n="config.fixedRate">Taxa fixa anual (%)</div><input type="number"
+          <label class="field-label" for="cfg-fixa" data-i18n="config.fixedRate">Taxa fixa anual (%)</label><input type="number"
             id="cfg-fixa" value="3.00" min="0" max="20" step="0.01" required oninput="recalcDebounced()">
         </div>
         <div class="field-row">
-          <div class="field-label" data-i18n="config.spread">Spread (%)</div><input type="number" id="cfg-spread"
+          <label class="field-label" for="cfg-spread" data-i18n="config.spread">Spread (%)</label><input type="number" id="cfg-spread"
             value="0.90" min="0" max="5" step="0.001" required oninput="recalcDebounced()">
         </div>
         <div class="field-row">
-          <div class="field-label"><span data-i18n="config.startDate">Data de início do crédito</span>
+          <div class="field-label" id="cfg-startdate-label"><span data-i18n="config.startDate">Data de início do crédito</span>
             <div class="field-hint" data-i18n="config.startDateHint">Mês e ano da primeira prestação</div>
           </div>
           <div style="display:flex;gap:5px;flex-shrink:0"><select id="cfg-inicio-mes" onchange="calcMonthsElapsed()"
-              style="width:110px"></select><select id="cfg-inicio-ano" onchange="calcMonthsElapsed()"
-              style="width:80px"></select></div>
+              aria-labelledby="cfg-startdate-label" style="width:110px"></select><select id="cfg-inicio-ano" onchange="calcMonthsElapsed()"
+              aria-labelledby="cfg-startdate-label" style="width:80px"></select></div>
         </div>
         <div class="field-row">
-          <div class="field-label"><span data-i18n="config.paymentDay">Dia do pagamento</span>
+          <label class="field-label" for="cfg-dia-pagamento"><span data-i18n="config.paymentDay">Dia do pagamento</span>
             <div class="field-hint" data-i18n="config.paymentDayHint">Dia do mês em que é debitada a prestação</div>
-          </div><input type="number" id="cfg-dia-pagamento" value="1" min="1" max="31" oninput="calcMonthsElapsed()"
+          </label><input type="number" id="cfg-dia-pagamento" value="1" min="1" max="31" oninput="calcMonthsElapsed()"
             style="width:148px">
         </div>
         <div class="field-row">
-          <div class="field-label"><span data-i18n="config.currentMonths">Meses decorridos hoje</span>
+          <label class="field-label" for="cfg-hoje"><span data-i18n="config.currentMonths">Meses decorridos hoje</span>
             <div class="field-hint" data-i18n="config.currentMonthsHint">Calculado automaticamente se definires a data
               de início</div>
-          </div><input type="number" id="cfg-hoje" value="12" min="0" required oninput="recalc()">
+          </label><input type="number" id="cfg-hoje" value="12" min="0" required oninput="recalc()">
         </div>
         <div id="cfg-error" style="display:none;margin-top:8px;padding:6px 10px;border-radius:6px;background:#fef2f2;color:#dc2626;font-size:.78rem"></div>
       </div>
@@ -749,6 +753,18 @@
         </a>
         <p style="font-size:.75rem;color:var(--steel);margin-top:12px" data-i18n="about.cta">Contribuições, sugestões e
           correções são muito bem-vindas! Abra uma issue ou pull request no repositório.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-overlay" class="modal-overlay" style="display:none">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-title" id="modal-title"></div>
+      <div class="modal-message" id="modal-message" style="display:none"></div>
+      <input type="text" id="modal-input" class="modal-input" style="display:none">
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost btn-sm" id="modal-cancel"></button>
+        <button type="button" class="btn btn-primary btn-sm" id="modal-confirm"></button>
       </div>
     </div>
   </div>

@@ -67,6 +67,30 @@ test('buildSchedule — prepayment with "reduzir prazo" locks the payment and sh
   closeTo(rows[rows.length - 1].bal, 0);
 });
 
+test('buildSchedule — "reduzir prazo" still recalculates the payment at a later Euribor revision', () => {
+  // Regression test: the payment used to stay frozen at its "reduzir prazo"
+  // value for the rest of the loan, even across later rate changes. A real
+  // bank revision recalculates the payment for every borrower regardless of
+  // a past term-reduction prepayment — only the amount between revisions
+  // should stay locked.
+  const loanState = {
+    contract: { capital: 100000, termYears: 10, fixedMonths: 0, fixedRate: 0, spread: 1.0 },
+    euriborTenor: 3,
+    euriborHistory: [
+      { startMonth: 1, rates: { 3: 2.0 }, desc: 'rev1' },
+      { startMonth: 30, rates: { 3: 5.0 }, desc: 'rev2 - big hike' }
+    ],
+    prepaymentsHistory: [{ month: 10, amount: 5000, option: 'term' }],
+    scenarios: { optimistic: { 3: 1.0 }, base: { 3: 2.5 }, pessimistic: { 3: 4.0 } }
+  };
+  const rows = Calc.buildSchedule(loanState, 'base');
+  closeTo(rows[8].pmt, 988.3081); // month 9, before the abate
+  closeTo(rows[28].pmt, 988.3081); // month 29, still locked at the pre-hike rate
+  closeTo(rows[29].pmt, 1008.7555); // month 30, rate jumps 2% -> 5%: payment must update
+  closeTo(rows[30].pmt, 1008.7555); // month 31, re-locked at the new rate
+  closeTo(rows[rows.length - 1].bal, 0);
+});
+
 test('buildSchedule — prepayment with "reduzir prestação" recalculates a lower payment, keeps the term', () => {
   const loanState = variableLoanState();
   loanState.prepaymentsHistory = [{ month: 20, amount: 10000, option: 'payment' }];
@@ -101,4 +125,50 @@ test('buildScheduleFrom — continues a schedule from an arbitrary month/balance
   const continued = Calc.buildScheduleFrom(loanState, 21, full[19].bal, 'base', 'term', pmtAtMonth20);
   closeTo(continued[0].pmt, full[20].pmt);
   closeTo(continued[0].bal, full[20].bal);
+});
+
+test('prepayImpact — "reduzir prazo" reports months saved and no new payment', () => {
+  const loanState = variableLoanState();
+  loanState.prepaymentsHistory = [{ month: 20, amount: 10000, option: 'term', penalRate: 0.5 }];
+  const imp = Calc.prepayImpact(loanState, 0, 'base', 24);
+  closeTo(imp.capitalBefore, 85423.309);
+  closeTo(imp.capitalAfter, 75423.309);
+  closeTo(imp.penalty, 50);
+  assert.equal(imp.monthsSaved, 13);
+  assert.equal(imp.newPayment, null);
+  // hoje=24 is past the prepayment month (20): all the interest saved so far
+  // should land in savedReal, and only future months in savedFuture.
+  closeTo(imp.savedReal, 117.178, 0.01);
+  closeTo(imp.savedFuture, 3024.511, 0.01);
+});
+
+test('prepayImpact — "reduzir prestação" reports the new (lower) payment and no term change', () => {
+  const loanState = variableLoanState();
+  loanState.prepaymentsHistory = [{ month: 20, amount: 10000, option: 'payment', penalRate: 0.5 }];
+  const imp = Calc.prepayImpact(loanState, 0, 'base', 24);
+  assert.equal(imp.monthsSaved, 0);
+  closeTo(imp.newPayment, 870.6563);
+});
+
+test('refinanceComparison — a lower spread and modest transfer cost shows real savings', () => {
+  const loanState = variableLoanState();
+  const result = Calc.refinanceComparison(loanState, 'base', { switchMonth: 24, newSpread: 0.3, newFixedMonths: 0, newFixedRate: 0, transferCost: 500 });
+  closeTo(result.capital, 82462.623);
+  closeTo(result.jurAtual, 12202.239);
+  closeTo(result.jurNovo, 9676.098);
+  closeTo(result.poupanca, 2026.141, 0.01);
+  closeTo(result.newPmt, 959.7783);
+});
+
+test('refinanceComparison — same rate plus a large transfer cost makes switching worse', () => {
+  const loanState = variableLoanState();
+  const result = Calc.refinanceComparison(loanState, 'base', { switchMonth: 24, newSpread: 1.0, newFixedMonths: 0, newFixedRate: 0, transferCost: 20000 });
+  closeTo(result.jurNovo, result.jurAtual); // identical rate/spread/term -> identical interest
+  closeTo(result.poupanca, -20000);
+});
+
+test('refinanceComparison — returns null once switchMonth falls past the end of the loan', () => {
+  const loanState = variableLoanState();
+  const result = Calc.refinanceComparison(loanState, 'base', { switchMonth: 999, newSpread: 0.3, newFixedMonths: 0, newFixedRate: 0, transferCost: 0 });
+  assert.equal(result, null);
 });

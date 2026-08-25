@@ -19,6 +19,7 @@
   --border: rgba(44, 82, 130, 0.15);
   --shadow: 0 2px 16px rgba(14, 26, 43, 0.10);
   --r: 12px;
+  --content-width: 1180px;
   color-scheme: light
 }
 
@@ -75,7 +76,7 @@ body {
 }
 
 .header-inner {
-  max-width: 960px;
+  max-width: var(--content-width);
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -114,7 +115,7 @@ body {
 }
 
 .tabs-inner {
-  max-width: 960px;
+  max-width: var(--content-width);
   margin: 0 auto;
   display: flex
 }
@@ -146,7 +147,7 @@ body {
 }
 
 .loan-bar-inner {
-  max-width: 960px;
+  max-width: var(--content-width);
   margin: 0 auto;
   padding: 8px 20px;
   display: flex;
@@ -180,7 +181,7 @@ body {
 }
 
 .main {
-  max-width: 960px;
+  max-width: var(--content-width);
   margin: 0 auto;
   padding: 20px 16px 60px
 }
@@ -938,6 +939,104 @@ tbody tr:hover td {
 
 .undo-toast .btn:hover {
   background: rgba(255, 255, 255, .1)
+}
+
+.storage-warn-banner {
+  position: fixed;
+  left: 50%;
+  top: 16px;
+  transform: translate(-50%, -12px);
+  max-width: min(92vw, 480px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  color: #92400e;
+  padding: 10px 10px 10px 14px;
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  font-size: .8rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s, transform .18s;
+  z-index: 300
+}
+
+.storage-warn-banner.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  pointer-events: auto
+}
+
+.storage-warn-banner .btn {
+  flex-shrink: 0;
+  border-color: #fcd34d;
+  color: #92400e
+}
+
+.storage-warn-banner .btn:hover {
+  background: rgba(146, 64, 14, .08)
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 400;
+  padding: 20px
+}
+
+.modal-box {
+  background: var(--surface);
+  border-radius: var(--r);
+  box-shadow: var(--shadow);
+  padding: 22px;
+  width: 100%;
+  max-width: 380px
+}
+
+.modal-title {
+  font-family: 'Fraunces', serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px
+}
+
+.modal-message {
+  font-size: .85rem;
+  color: var(--steel);
+  margin-bottom: 14px;
+  line-height: 1.5
+}
+
+.modal-input {
+  width: 100%;
+  border: 1.5px solid var(--mist);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: .88rem;
+  color: var(--text);
+  background: var(--fog);
+  margin-bottom: 16px;
+  transition: border-color .15s
+}
+
+.modal-input:focus {
+  outline: none;
+  border-color: var(--mid);
+  background: var(--surface)
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px
 }
 
 .sc-input {

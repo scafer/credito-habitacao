@@ -63,8 +63,12 @@
       if (!prepayByMonth[p.month]) prepayByMonth[p.month] = [];
       prepayByMonth[p.month].push(p);
     }
-    // lockedPmt: when set, payment is held fixed (reduzir prazo); null = recalculate (reduzir prestação)
-    let lockedPmt = null;
+    // lockedPmt: when set, payment is held fixed (reduzir prazo) until the next
+    // rate change, at which point it is recalculated and re-locked at the new
+    // rate — matching periodic bank revisions, which recompute the payment for
+    // every borrower regardless of past "reduzir prazo" prepayments.
+    // null = always recalculate (reduzir prestação).
+    let lockedPmt = null, lockedAtRate = null;
     for (let i = 1; i <= N; i++) {
       if (bal < 0.01) break;
       const isF = i <= F;
@@ -74,8 +78,12 @@
       let pmt;
       if (isF) {
         pmt = pmtF;
-      } else if (lockedPmt !== null) {
+      } else if (lockedPmt !== null && rM === lockedAtRate) {
         pmt = lockedPmt;
+      } else if (lockedPmt !== null) {
+        pmt = bal > 0 ? rM * bal / (1 - Math.pow(1 + rM, -rem)) : 0;
+        lockedPmt = pmt;
+        lockedAtRate = rM;
       } else {
         pmt = bal > 0 ? rM * bal / (1 - Math.pow(1 + rM, -rem)) : 0;
       }
@@ -95,6 +103,7 @@
           const abateAmt = Math.min(p.amount, bal);
           bal = Math.max(bal - abateAmt, 0);
           lockedPmt = p.option === 'term' ? pmt : null;
+          lockedAtRate = p.option === 'term' ? rM : null;
         }
       }
       if (bal < 0.01) break;
@@ -108,6 +117,10 @@
     const N = loanState.contract.termYears * 12, F = loanState.contract.fixedMonths, sp = loanState.contract.spread / 100;
     const rF = loanState.contract.fixedRate / 100 / 12;
     let bal = startBalance, rows = [];
+    // Same "reduzir prazo" semantics as buildSchedule: keep pmtRef only while
+    // the rate stays the one it was set at; recalculate and re-lock at each
+    // rate change instead of holding pmtRef for the rest of the projection.
+    let lockedPmt = option === 'term' ? pmtRef : null, lockedAtRate = null;
     for (let i = startMonth; i <= N; i++) {
       const isF = i <= F;
       const eu = isF ? null : getEuriborAt(loanState, i, scenario);
@@ -115,8 +128,13 @@
       const rem = N - i + 1;
       let pmt;
       if (option === 'term') {
-        // Keep original payment, shorten term
-        pmt = pmtRef > 0 ? pmtRef : (bal > 0 ? rM * bal / (1 - Math.pow(1 + rM, -rem)) : 0);
+        if (lockedPmt > 0 && (lockedAtRate === null || rM === lockedAtRate)) {
+          pmt = lockedPmt;
+        } else {
+          pmt = bal > 0 ? rM * bal / (1 - Math.pow(1 + rM, -rem)) : 0;
+          lockedPmt = pmt;
+        }
+        lockedAtRate = rM;
       } else {
         // Recalculate payment each period with remaining balance and term
         pmt = bal > 0 ? rM * bal / (1 - Math.pow(1 + rM, -rem)) : 0;
@@ -128,5 +146,58 @@
     return rows;
   }
 
-  return { getEuriborAt, buildSchedule, buildScheduleFrom };
+  // Impact of one recorded prepayment: interest saved (split into what's
+  // already happened vs. still projected) and, for "reduzir prazo", months
+  // saved, or for "reduzir prestação", the new payment. Compares the actual
+  // schedule against a hypothetical one where that single prepayment never
+  // happened.
+  function prepayImpact(loanState, index, scenario, hoje) {
+    const list = loanState.prepaymentsHistory || [];
+    const p = list[index];
+    if (!p) return null;
+    const rowsWith = buildSchedule(loanState, scenario);
+    const rowsWithout = buildSchedule(loanState, scenario, { overridePrepayments: list.filter((_, j) => j !== index) });
+    const rowBefore = rowsWithout[p.month - 1];
+    const capitalBefore = rowBefore ? rowBefore.bal : 0;
+    const capitalAfter = Math.max(capitalBefore - p.amount, 0);
+    let savedReal = 0, savedFuture = 0;
+    const maxLen = Math.max(rowsWith.length, rowsWithout.length);
+    for (let m = p.month - 1; m < maxLen; m++) {
+      const withJur = m < rowsWith.length ? rowsWith[m].jur : 0;
+      const withoutJur = m < rowsWithout.length ? rowsWithout[m].jur : 0;
+      const diff = withoutJur - withJur;
+      if (m + 1 <= hoje) savedReal += diff; else savedFuture += diff;
+    }
+    const penalty = p.amount * (p.penalRate || 0) / 100;
+    const monthsSaved = rowsWithout.length - rowsWith.length;
+    const newPayment = p.option === 'payment' && rowsWith[p.month] ? rowsWith[p.month].pmt : null;
+    return { capitalBefore, capitalAfter, savedReal: Math.max(savedReal, 0), savedFuture: Math.max(savedFuture, 0), penalty, monthsSaved, newPayment };
+  }
+
+  // Compares keeping the current loan against switching to a new bank from
+  // `opts.switchMonth` onward, with a new spread/fixed period and a one-off
+  // transfer cost. Returns null if switchMonth falls outside the schedule.
+  function refinanceComparison(loanState, scenario, opts) {
+    const rowsAtual = buildSchedule(loanState, scenario);
+    const rowAntes = rowsAtual[opts.switchMonth - 1];
+    if (!rowAntes) return null;
+    const capital = rowAntes.bal;
+    let jurAtual = 0;
+    for (let i = opts.switchMonth; i < rowsAtual.length; i++) jurAtual += rowsAtual[i].jur;
+    const remainingMonths = rowsAtual.length - opts.switchMonth;
+    const newLoanState = {
+      contract: { capital, termYears: remainingMonths / 12, fixedMonths: opts.newFixedMonths, fixedRate: opts.newFixedRate, spread: opts.newSpread },
+      euriborTenor: loanState.euriborTenor,
+      euriborHistory: [],
+      prepaymentsHistory: [],
+      scenarios: loanState.scenarios
+    };
+    const rowsNovo = buildSchedule(newLoanState, scenario);
+    let jurNovo = 0;
+    for (const r of rowsNovo) jurNovo += r.jur;
+    const poupanca = jurAtual - (jurNovo + (opts.transferCost || 0));
+    return { capital, jurAtual, jurNovo, poupanca, newPmt: rowsNovo[0] ? rowsNovo[0].pmt : null };
+  }
+
+  return { getEuriborAt, buildSchedule, buildScheduleFrom, prepayImpact, refinanceComparison };
 });
