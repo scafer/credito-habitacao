@@ -172,3 +172,30 @@ test('refinanceComparison — returns null once switchMonth falls past the end o
   const result = Calc.refinanceComparison(loanState, 'base', { switchMonth: 999, newSpread: 0.3, newFixedMonths: 0, newFixedRate: 0, transferCost: 0 });
   assert.equal(result, null);
 });
+
+test('totalPrepaymentImpact — combines every prepayment into one cumulative savings series', () => {
+  const loanState = variableLoanState();
+  loanState.prepaymentsHistory = [
+    { month: 20, amount: 10000, option: 'term', penalRate: 0.5 },
+    { month: 40, amount: 5000, option: 'payment', penalRate: 0.5 }
+  ];
+  const imp = Calc.totalPrepaymentImpact(loanState, 'base', 50);
+  closeTo(imp.savedReal, 1031.838);
+  closeTo(imp.savedFuture, 1481.268);
+  assert.equal(imp.cumulative.length, 120);
+  // interest for month N is computed on the balance before that month's
+  // prepayment is applied, so the effect only shows up from month N+1 on
+  assert.equal(imp.cumulative[19], 0); // month 20: the abate month itself
+  assert.ok(imp.cumulative[20] > 0); // month 21: first month it shows up
+  // savedReal is exactly the cumulative total up to "hoje" (month 50)
+  closeTo(imp.cumulative[49], imp.savedReal);
+});
+
+test('totalPrepaymentImpact — an empty prepayment history saves nothing', () => {
+  const loanState = variableLoanState();
+  const imp = Calc.totalPrepaymentImpact(loanState, 'base', 50);
+  assert.equal(imp.savedReal, 0);
+  assert.equal(imp.savedFuture, 0);
+  assert.equal(imp.monthsSaved, 0);
+  assert.ok(imp.cumulative.every(v => v === 0));
+});

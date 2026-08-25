@@ -1039,6 +1039,63 @@ tbody tr:hover td {
   gap: 8px
 }
 
+.bank-offers-head,
+.bank-offer-row {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr 1fr 1fr auto;
+  gap: 8px;
+  align-items: center
+}
+
+.bank-offers-head {
+  font-size: .68rem;
+  color: var(--steel);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  padding: 0 0 8px;
+  border-bottom: 1px solid var(--fog);
+  margin-bottom: 10px
+}
+
+.bank-offer-row {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--fog)
+}
+
+.bank-offer-row:last-child {
+  border-bottom: none
+}
+
+.bank-offer-row input {
+  width: 100%;
+  border: 1.5px solid var(--mist);
+  border-radius: 8px;
+  padding: 7px 9px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--mid);
+  background: var(--fog);
+  text-align: right;
+  transition: border-color .15s
+}
+
+.bank-offer-row input.offer-name {
+  text-align: left;
+  color: var(--text)
+}
+
+.bank-offer-row input:focus {
+  outline: none;
+  border-color: var(--mid);
+  background: var(--surface)
+}
+
+.bank-offer-row .best-tag {
+  display: inline-block;
+  margin-left: 6px
+}
+
 .sc-input {
   width: 120px;
   border: 1.5px solid;
@@ -1133,4 +1190,26 @@ tbody tr:hover td {
   .loan-bar-actions {
     margin-left: 0;
   }
+
+  .bank-offers-head {
+    display: none;
+  }
+
+  .bank-offer-row {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "name name"
+      "spread fixos"
+      "fixa custo"
+      "remove remove";
+    gap: 6px;
+    padding: 10px 0;
+  }
+
+  .bank-offer-row .offer-name { grid-area: name }
+  .bank-offer-row .offer-spread { grid-area: spread }
+  .bank-offer-row .offer-fixos { grid-area: fixos }
+  .bank-offer-row .offer-fixa { grid-area: fixa }
+  .bank-offer-row .offer-custo { grid-area: custo }
+  .bank-offer-row .offer-remove { grid-area: remove; justify-self: end }
 }

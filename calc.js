@@ -199,5 +199,28 @@
     return { capital, jurAtual, jurNovo, poupanca, newPmt: rowsNovo[0] ? rowsNovo[0].pmt : null };
   }
 
-  return { getEuriborAt, buildSchedule, buildScheduleFrom, prepayImpact, refinanceComparison };
+  // Combined impact of every recorded prepayment together: interest saved
+  // (split into already-realized vs. still-projected, like prepayImpact),
+  // plus a month-by-month cumulative savings series for charting. Compares
+  // the actual schedule against a hypothetical one with no prepayments at
+  // all, rather than removing them one at a time.
+  function totalPrepaymentImpact(loanState, scenario, hoje) {
+    const rowsWith = buildSchedule(loanState, scenario);
+    const rowsWithout = buildSchedule(loanState, scenario, { overridePrepayments: [] });
+    const maxLen = Math.max(rowsWith.length, rowsWithout.length);
+    let savedReal = 0, savedFuture = 0, cum = 0;
+    const cumulative = [];
+    for (let m = 0; m < maxLen; m++) {
+      const withJur = m < rowsWith.length ? rowsWith[m].jur : 0;
+      const withoutJur = m < rowsWithout.length ? rowsWithout[m].jur : 0;
+      const diff = withoutJur - withJur;
+      cum += diff;
+      cumulative.push(cum);
+      if (m + 1 <= hoje) savedReal += diff; else savedFuture += diff;
+    }
+    const monthsSaved = rowsWithout.length - rowsWith.length;
+    return { savedReal: Math.max(savedReal, 0), savedFuture: Math.max(savedFuture, 0), monthsSaved, cumulative };
+  }
+
+  return { getEuriborAt, buildSchedule, buildScheduleFrom, prepayImpact, refinanceComparison, totalPrepaymentImpact };
 });
