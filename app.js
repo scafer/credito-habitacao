@@ -61,10 +61,8 @@ function showInfoToast(message) {
 }
 
 // ── MODAL ───────────────────────────────────────────────
-// Replaces prompt()/confirm() with an in-app dialog matching the rest of
-// the UI (themeable, keyboard-accessible). Resolves to: the raw input
-// string when showInput + confirmed, `true`/`false` for a plain confirm,
-// or `null` if cancelled (Escape, backdrop click, or the Cancel button).
+// Resolves to the raw input string (showInput mode), true/false (plain
+// confirm), or null if cancelled.
 function openModal({ title, message, inputValue, showInput, confirmLabel, cancelLabel, danger }) {
   const t = i18n[lang] || i18n.pt;
   return new Promise(resolve => {
@@ -153,10 +151,6 @@ function calcMonthsElapsed() {
   recalc();
 }
 
-// Active-loan wrappers around calc.js — build the loan-state object the
-// engine expects from the DOM, so app.js and the aggregate view (which
-// feeds stored loan objects straight into the same engine) share one
-// amortization implementation.
 function buildSched(sc, overridePrepayments) {
   const loanState = captureContractData();
   const startDate = getStartDateOrFallback();
@@ -182,7 +176,6 @@ function renderResumo() {
   document.getElementById('r-data').textContent = `${t.summary.month} ${hoje} · ${fmtM(hoje)}`;
   const nR = rows[hoje];
   if (nR) { document.getElementById('r-pmt').textContent = EUR(nR.pmt); document.getElementById('r-taxa').textContent = PCT(nR.euTot) + ' ' + t.summary.totalLabel; }
-  // total projected costs (all extra costs over full loan life)
   const totalMonths = cfgI('cfg-prazo') * 12;
   let totalCosts = 0;
   for (const c of extraCosts) {
@@ -217,7 +210,6 @@ function renderResumo() {
   const lastStatus = lh ? `${PCT(lastRate)} (${tenorLabel} ${t.summary.fromMonth || 'desde mês'} ${lh.startMonth})` : t.summary.none;
   document.getElementById('r-info').innerHTML = `📋 <strong>${t.summary.lastRateLabel}:</strong> ${lastStatus} &nbsp;·&nbsp; ${t.summary.nextReviewLabel}: ${t.summary.month} ${nxRev} (${fmtM(nxRev)})`;
 
-  // Render chart
   renderCapitalChart(rows, hoje);
 }
 
@@ -447,13 +439,12 @@ function renderTbl(reset) {
   if (warnEl) warnEl.style.display = hasStartDate() ? 'none' : 'block';
 }
 
-// Build schedule from a given month with a given starting balance (for abate simulation)
 function buildSchedFrom(startMonth, startBalance, sc, op, pmtRef) {
   return Calc.buildScheduleFrom(captureContractData(), startMonth, startBalance, sc, op, pmtRef);
 }
 
-// Mirrors buildSched() but reads from a stored loan object instead of the DOM,
-// so the aggregate view can compute every loan without switching the active one.
+// Reads from a stored loan object instead of the DOM, so the aggregate view
+// can compute every loan without switching the active one.
 function buildScheduleForLoan(loan, sc) {
   return Calc.buildSchedule(loan, sc);
 }
@@ -525,9 +516,7 @@ function defaultPenaltyRateFor(month) {
   return (inFixedPeriod ? CONFIG.PREPAYMENT_PENALTY.FIXED_RATE : CONFIG.PREPAYMENT_PENALTY.VARIABLE_RATE) * 100;
 }
 
-// Refreshes a penalty-rate field to the suggested default for `month`, but
-// only while it still holds a known default (0.5 or 2) — leaves a value the
-// user typed themselves alone.
+// Only overwrites the field while it still holds a known default (0.5 or 2).
 function refreshPenaltyRateDefault(elId, month) {
   const el = document.getElementById(elId);
   if (!el) return;
@@ -558,12 +547,9 @@ function calcAbate() {
   const capAntes = rowAntes.bal;
   const capApos = Math.max(capAntes - abate, 0);
 
-  // Juros restantes SEM abate (a partir do mês seguinte ao abate)
   let jSem = 0;
   for (let i = mesSim; i < rows.length; i++) jSem += rows[i].jur;
 
-  // Juros restantes COM abate — rebuild schedule from mesSim+1 with reduced capital
-  // For "reduzir prazo": keep same payment as without abate
   const pmtRef = rows[mesSim] ? rows[mesSim].pmt : 0;
   const rowsCom = Calc.buildScheduleFrom(loanState, mesSim + 1, capApos, sc, op, pmtRef);
   let jCom = 0; for (const r of rowsCom) jCom += r.jur;
@@ -574,7 +560,6 @@ function calcAbate() {
   const penalPct = parseFloat(document.getElementById('ab-penal-rate')?.value || defaultPenaltyRateFor(mesSim)) / 100;
   const penal = abate * penalPct;
 
-  // New payment (reduzir prestação) or months saved (reduzir prazo)
   const novaPmt = op === 'payment' && rowsCom.length > 0 ? rowsCom[0].pmt : 0;
 
   document.getElementById('ab-result').style.display = 'block';
@@ -838,7 +823,6 @@ function updateCostsSummary() {
   let monthlyNow = 0, totalPaid = 0, totalProjected = 0;
   for (const c of extraCosts) {
     if (c.frequency === 'oneTime') {
-      // One-time cost: count if month has passed
       if (c.startMonth <= hoje) totalPaid += c.amount;
       totalProjected += c.amount;
     } else {
@@ -1469,10 +1453,8 @@ function saveToStorage() {
   }
 }
 
-// Persistent, tab-independent banner — auto-save can fail silently
-// (storage quota, private browsing) and recalc() runs on nearly every
-// interaction, so this must not nag on every failed attempt; it shows once
-// and stays until a save succeeds or the user dismisses it.
+// Shows once and stays until a save succeeds or the user dismisses it,
+// rather than re-popping on every failed attempt (recalc() runs constantly).
 function showStorageSaveWarning() {
   const t = i18n[lang] || i18n.pt;
   let el = document.getElementById('storage-save-warn');
@@ -1493,13 +1475,9 @@ function hideStorageSaveWarning() {
   if (el) el.classList.remove('show');
 }
 
-// Detects which saved/imported JSON shape `d` is — the current multi-loan
-// one, or the legacy single-loan one predating Fase 1 — and normalizes it
-// into a { loans, activeLoanId } pair. Never touches the app's current
-// `loans` array itself: loadFromStorage() replaces it wholesale (there's
-// nothing to preserve yet at startup), while importarDados() merges a
-// legacy backup in alongside whatever loans already exist, so each caller
-// decides that part. Returns null if the shape isn't recognized.
+// Normalizes either the current multi-loan JSON shape or the legacy
+// single-loan one into { loans, activeLoanId }. Doesn't touch the app's
+// own `loans` array — callers decide whether to replace or merge it in.
 function parseLoansPayload(d, legacyLoanName) {
   if (Array.isArray(d.loans) && d.loans.length) {
     const loans = d.loans;
@@ -1562,9 +1540,7 @@ function renderBackupWarning() {
 }
 
 // ── EURIBOR REVIEW REMINDERS ─────────────────────────────
-// Static PWA, no server — this can only check "is a review due?" and fire
-// a Notification while the app is open (or gets opened), not a true
-// background push while it's closed.
+// No server, so this only fires while the app is open — not a background push.
 const NOTIF_NOTIFIED_KEY = LS_KEY + '_notifiedReviews';
 
 function renderNotifStatus() {
@@ -1600,9 +1576,8 @@ function getNotifiedReviews() {
   try { return JSON.parse(localStorage.getItem(NOTIF_NOTIFIED_KEY) || '{}'); } catch (e) { return {}; }
 }
 
-// Checks the active loan's next expected Euribor review against "hoje", and
-// fires one Notification the first time it's found due — not on every
-// check, so re-opening the app doesn't nag once you've been told.
+// Fires one Notification the first time a review is found due, not on
+// every check.
 function checkEuriborReviewReminder() {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   const hoje = cfgI('cfg-hoje');

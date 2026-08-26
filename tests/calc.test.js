@@ -68,11 +68,6 @@ test('buildSchedule — prepayment with "reduzir prazo" locks the payment and sh
 });
 
 test('buildSchedule — "reduzir prazo" still recalculates the payment at a later Euribor revision', () => {
-  // Regression test: the payment used to stay frozen at its "reduzir prazo"
-  // value for the rest of the loan, even across later rate changes. A real
-  // bank revision recalculates the payment for every borrower regardless of
-  // a past term-reduction prepayment — only the amount between revisions
-  // should stay locked.
   const loanState = {
     contract: { capital: 100000, termYears: 10, fixedMonths: 0, fixedRate: 0, spread: 1.0 },
     euriborTenor: 3,
@@ -86,9 +81,35 @@ test('buildSchedule — "reduzir prazo" still recalculates the payment at a late
   const rows = Calc.buildSchedule(loanState, 'base');
   closeTo(rows[8].pmt, 988.3081); // month 9, before the abate
   closeTo(rows[28].pmt, 988.3081); // month 29, still locked at the pre-hike rate
-  closeTo(rows[29].pmt, 1008.7555); // month 30, rate jumps 2% -> 5%: payment must update
-  closeTo(rows[30].pmt, 1008.7555); // month 31, re-locked at the new rate
+  closeTo(rows[29].pmt, 1084.7481); // month 30, rate jumps 2% -> 5%: payment must update
+  closeTo(rows[30].pmt, 1084.7481); // month 31, re-locked at the new rate
   closeTo(rows[rows.length - 1].bal, 0);
+  // must still finish well before the original 120-month term
+  assert.ok(rows.length < 120, `expected the term to stay shortened, got ${rows.length} months`);
+});
+
+test('buildSchedule — "reduzir prazo" term reduction survives several later revisions, unlike "reduzir prestação"', () => {
+  function loanStateWithOption(option) {
+    return {
+      contract: { capital: 100000, termYears: 10, fixedMonths: 12, fixedRate: 3.0, spread: 1.0 },
+      euriborTenor: 3,
+      euriborHistory: [
+        { startMonth: 13, rates: { 3: 2.0 } },
+        { startMonth: 16, rates: { 3: 2.1 } },
+        { startMonth: 19, rates: { 3: 2.2 } },
+        { startMonth: 22, rates: { 3: 2.3 } }
+      ],
+      prepaymentsHistory: option ? [{ month: 20, amount: 10000, option, penalRate: 0.5 }] : [],
+      scenarios: { optimistic: { 3: 1.0 }, base: { 3: 2.5 }, pessimistic: { 3: 4.0 } }
+    };
+  }
+  const rowsTerm = Calc.buildSchedule(loanStateWithOption('term'), 'base');
+  const rowsPayment = Calc.buildSchedule(loanStateWithOption('payment'), 'base');
+  const rowsNone = Calc.buildSchedule(loanStateWithOption(null), 'base');
+  assert.equal(rowsPayment.length, 120); // reduzir prestação never shortens the term
+  assert.equal(rowsNone.length, 120);
+  assert.ok(rowsTerm.length < 120, `expected a shorter term, got ${rowsTerm.length} months`);
+  closeTo(rowsTerm[rowsTerm.length - 1].bal, 0);
 });
 
 test('buildSchedule — prepayment with "reduzir prestação" recalculates a lower payment, keeps the term', () => {
@@ -136,10 +157,9 @@ test('prepayImpact — "reduzir prazo" reports months saved and no new payment',
   closeTo(imp.penalty, 50);
   assert.equal(imp.monthsSaved, 13);
   assert.equal(imp.newPayment, null);
-  // hoje=24 is past the prepayment month (20): all the interest saved so far
-  // should land in savedReal, and only future months in savedFuture.
-  closeTo(imp.savedReal, 117.178, 0.01);
-  closeTo(imp.savedFuture, 3024.511, 0.01);
+  // history only covers 13-15, so months 16-24 aren't a confirmed rate yet
+  closeTo(imp.savedReal, 0);
+  closeTo(imp.savedFuture, 3141.689, 0.01);
 });
 
 test('prepayImpact — "reduzir prestação" reports the new (lower) payment and no term change', () => {
@@ -180,15 +200,39 @@ test('totalPrepaymentImpact — combines every prepayment into one cumulative sa
     { month: 40, amount: 5000, option: 'payment', penalRate: 0.5 }
   ];
   const imp = Calc.totalPrepaymentImpact(loanState, 'base', 50);
-  closeTo(imp.savedReal, 1031.838);
-  closeTo(imp.savedFuture, 1481.268);
+  closeTo(imp.savedReal, 0);
+  closeTo(imp.savedFuture, 2513.106, 0.01);
   assert.equal(imp.cumulative.length, 120);
   // interest for month N is computed on the balance before that month's
   // prepayment is applied, so the effect only shows up from month N+1 on
   assert.equal(imp.cumulative[19], 0); // month 20: the abate month itself
   assert.ok(imp.cumulative[20] > 0); // month 21: first month it shows up
-  // savedReal is exactly the cumulative total up to "hoje" (month 50)
-  closeTo(imp.cumulative[49], imp.savedReal);
+  assert.ok(imp.cumulative[49] > imp.savedReal); // cumulative[] ignores confirmation, savedReal doesn't
+});
+
+test('totalPrepaymentImpact — savedReal only counts months with a confirmed rate, so it does not shift when you switch scenarios', () => {
+  // history covers every month up to "hoje" (24), no gap for the scenario to fill in
+  const loanState = {
+    contract: { capital: 100000, termYears: 10, fixedMonths: 12, fixedRate: 3.0, spread: 1.0 },
+    euriborTenor: 3,
+    euriborHistory: [
+      { startMonth: 13, rates: { 3: 2.0 } },
+      { startMonth: 16, rates: { 3: 2.1 } },
+      { startMonth: 19, rates: { 3: 2.2 } },
+      { startMonth: 22, rates: { 3: 2.3 } }
+    ],
+    prepaymentsHistory: [{ month: 20, amount: 10000, option: 'payment', penalRate: 0.5 }],
+    scenarios: { optimistic: { 3: 1.0 }, base: { 3: 2.5 }, pessimistic: { 3: 4.0 } }
+  };
+  const opt = Calc.totalPrepaymentImpact(loanState, 'opt', 24);
+  const base = Calc.totalPrepaymentImpact(loanState, 'base', 24);
+  const pess = Calc.totalPrepaymentImpact(loanState, 'pess', 24);
+  closeTo(opt.savedReal, base.savedReal);
+  closeTo(base.savedReal, pess.savedReal);
+  assert.ok(base.savedReal > 0); // and it's not just zero-everywhere — real data is confirmed here
+  // savedFuture, in contrast, is a projection and should genuinely differ.
+  assert.ok(opt.savedFuture < base.savedFuture);
+  assert.ok(base.savedFuture < pess.savedFuture);
 });
 
 test('totalPrepaymentImpact — an empty prepayment history saves nothing', () => {
